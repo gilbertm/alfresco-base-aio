@@ -1,0 +1,76 @@
+version: '3.4'
+services:
+  aio-share:
+    image: alfresco-share-aio:development
+    build:
+      dockerfile: ./Dockerfile
+      context: ../../../aio-share-docker/target
+    environment:
+      CATALINA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888"
+      REPO_HOST: aio-acs
+      REPO_PORT: 8080
+    ports:
+      - "${share.port}:8080"
+      - "${share.debug.port}:8888"
+  aio-acs:
+    image: alfresco-content-services-aio:development
+    build:
+      dockerfile: ./Dockerfile
+      context: ../../../aio-platform-docker/target
+    environment:
+      JAVA_TOOL_OPTIONS: "${keystore.settings}"
+      JAVA_OPTS: "
+        -Dsolr.secureComms=secret
+        -Dsolr.sharedSecret=secret
+        -Dmessaging.broker.url=\"failover:(nio://aio-activemq:61616)?timeout=3000&jms.useCompression=true\"
+        "
+      CATALINA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888"
+    ports:
+      - "${acs.port}:8080"
+      - "${acs.debug.port}:8888"
+    volumes:
+      - aio-acs-volume:/usr/local/tomcat/alf_data
+    depends_on:
+      - aio-postgres
+  aio-postgres:
+    image: postgres:16.5
+    environment:
+      POSTGRES_DB: alfresco
+      POSTGRES_USER: alfresco
+      POSTGRES_PASSWORD: alfresco
+    command: postgres -c max_connections=300 -c log_min_messages=LOG
+    ports:
+      - "${postgres.port}:5432"
+    volumes:
+      - aio-db-volume:/var/lib/postgresql/data
+  aio-ass:
+    image: alfresco/alfresco-search-services:2.0.15
+    environment:
+      SOLR_ALFRESCO_HOST: aio-acs
+      SOLR_ALFRESCO_PORT: 8080
+      SOLR_SOLR_HOST: aio-ass
+      SOLR_SOLR_PORT: 8983
+      SOLR_CREATE_ALFRESCO_DEFAULTS: alfresco,archive
+      ALFRESCO_SECURE_COMMS: "secret"
+      JAVA_TOOL_OPTIONS: "-Dalfresco.secureComms.secret=secret"
+    ports:
+      - "8983:8983"
+    volumes:
+      - aio-ass-volume:/opt/alfresco-search-services/contentstore
+      - aio-ass-volume:/opt/alfresco-search-services/data
+  aio-activemq:
+      image: alfresco/alfresco-activemq:5.18-jre17-rockylinux8
+      mem_limit: 1g
+      ports:
+        - 8161:8161 # Web Console
+        - 5672:5672 # AMQP
+        - 61616:61616 # OpenWire
+        - 61613:61613 # STOMP
+
+volumes:
+  aio-acs-volume:
+    external: true
+  aio-db-volume:
+    external: true
+  aio-ass-volume:
+    external: true
