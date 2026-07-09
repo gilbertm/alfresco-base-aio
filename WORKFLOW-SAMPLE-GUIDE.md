@@ -55,10 +55,37 @@ aio-platform/src/main/resources/alfresco/module/aio-platform/
 
 **Structure:**
 ```xml
-<beans>
-    <import resource="classpath:alfresco/module/${project.artifactId}/context/bootstrap-context.xml" />
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+	Licensed to the Apache Software Foundation (ASF) under one or more
+	contributor license agreements. 
+	The ASF licenses this file to You under the Apache License, Version 2.0
+	(the "License"); you may not use this file except in compliance with
+	the License.  You may obtain a copy of the License at
+	
+	http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+	
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<!-- This is filtered by Maven at build time, so that module name is single sourced. -->
+	<!-- Note. The bootstrap-context.xml file has to be loaded first.
+				Otherwise your custom models are not yet loaded when your service beans are instantiated and you
+				cannot for example register policies on them. -->
+	<import resource="classpath:alfresco/module/${project.artifactId}/context/bootstrap-context.xml" />
     <import resource="classpath:alfresco/module/${project.artifactId}/context/service-context.xml" />
-    <import resource="classpath:alfresco/module/${project.artifactId}/context/webscript-context.xml" />
+	<import resource="classpath:alfresco/module/${project.artifactId}/context/webscript-context.xml" />
+
 </beans>
 ```
 
@@ -87,8 +114,16 @@ aio-platform/src/main/resources/alfresco/module/aio-platform/
 
 **Structure:**
 ```xml
-<beans>
-    <!-- 1. Model Registration -->
+<?xml version='1.0' encoding='UTF-8'?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <!-- The bootstrap-context.xml file is used for patch definitions, importers, 
+		 workflow, and loading custom content models.  -->
+
+    <!-- Registration of new models -->
     <bean id="aio-platform.dictionaryBootstrap" parent="dictionaryModelBootstrap" depends-on="dictionaryBootstrap">
         <property name="models">
             <list>
@@ -98,12 +133,12 @@ aio-platform/src/main/resources/alfresco/module/aio-platform/
         </property>
         <property name="labels">
             <list>
+                <!-- Bootstrap Resource Bundles for the content model types, aspects, properties etc -->
                 <value>alfresco/module/${project.artifactId}/messages/content-model</value>
             </list>
         </property>
     </bean>
 
-    <!-- 2. Workflow Deployment (multiple definitions supported) -->
     <bean id="ae.ac.cud.sampleprocess.workflowBootstrap" parent="workflowDeployer">
         <property name="workflowDefinitions">
             <list>
@@ -214,7 +249,7 @@ Two process definitions are deployed side-by-side. The first is a basic sample; 
     <userTask id="someTask" name="Activiti is awesome!" activiti:formKey="wf:adhocTask">
         <humanPerformer>
             <resourceAssignmentExpression>
-                <formalExpression>${bpm_assignee.properties.userName}</formalExpression>
+                <formalExpression>${initiator.properties.userName}</formalExpression>
             </resourceAssignmentExpression>
         </humanPerformer>
     </userTask>
@@ -241,7 +276,7 @@ Two process definitions are deployed side-by-side. The first is a basic sample; 
     <userTask id="reviewTask" name="Review Document" activiti:formKey="wf:adhocTask">
         <humanPerformer>
             <resourceAssignmentExpression>
-                <formalExpression>${bpm_assignee.properties.userName}</formalExpression>
+                <formalExpression>${initiator.properties.userName}</formalExpression>
             </resourceAssignmentExpression>
         </humanPerformer>
     </userTask>
@@ -263,7 +298,7 @@ Two process definitions are deployed side-by-side. The first is a basic sample; 
 | `process` | `review-process` | Unique process identifier; used as the workflow definition key in Alfresco |
 | `startEvent` | `start` | Entry point; `activiti:formKey="wf:submitAdhocTask"` references a standard Alfresco start task form |
 | `userTask` | `reviewTask` | Human review task; `activiti:formKey="wf:adhocTask"` references a standard Alfresco ad-hoc task form |
-| `humanPerformer` | — | Assigns the task to the workflow initiator via `${bpm_assignee.properties.userName}` |
+| `humanPerformer` | — | Assigns the task to the workflow initiator via `${initiator.properties.userName}` |
 | `serviceTask` | `notificationServiceTask` | Custom service task that runs `ReviewNotificationDelegate` (JavaDelegate) |
 | `endEvent` | `end` | Terminates the process |
 
@@ -318,12 +353,36 @@ review-process.workflow.description=Review a document and receive a notification
 
 **Current State:**
 ```xml
-<beans>
-    <!-- Custom Java delegate for the review workflow.
-         Called by the service task in review-process.bpmn20.xml.
-         To use dependency injection, change activiti:class in the BPMN
-         to activiti:delegateExpression="${reviewNotificationDelegate}". -->
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <!--
+        Custom Java delegate for the review workflow.
+        Called by the service task in review-process.bpmn20.xml via activiti:class.
+        To use dependency injection, switch to activiti:delegateExpression="${reviewNotificationDelegate}"
+        in the BPMN and remove the class attribute.
+    -->
     <bean id="reviewNotificationDelegate" class="ae.ac.cud.workflow.ReviewNotificationDelegate" />
+
 </beans>
 ```
 
@@ -359,7 +418,9 @@ public class ReviewNotificationDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) throws Exception {
         // Retrieve workflow variables (set by the user task form)
-        String reviewer = (String) execution.getVariable("bpm_assignee");
+        // bpm_assignee may be an ActivitiScriptNode (wrapping a NodeRef) rather than a plain String
+        Object reviewerObj = execution.getVariable("bpm_assignee");
+        String reviewer = reviewerObj != null ? reviewerObj.toString() : null;
         String workflowDescription = (String) execution.getVariable("bpm_workflowDescription");
         String message = String.format(
                 "[WORKFLOW NOTIFICATION] The file has been reviewed by '%s'. Workflow: '%s' (id=%s)",
@@ -405,7 +466,7 @@ Alfresco Workflow Engine (Activiti)
         │   review-workflow-messages.properties (loaded via workflowDeployer.labels)
         │
         ├── Step 1: User completes "Review Document" task
-        │   (assigned via ${bpm_assignee.properties.userName})
+        │   (assigned via ${initiator.properties.userName})
         │
         ├── Step 2: Activiti engine reaches the service task:
         │   ┌─────────────────────────────────────────────────────┐

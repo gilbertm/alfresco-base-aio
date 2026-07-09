@@ -13,7 +13,7 @@
       <userTask id="someTask" name="Activiti is awesome!" activiti:formKey="wf:adhocTask">
          <humanPerformer>
             <resourceAssignmentExpression>
-               <formalExpression>${bpm_assignee.properties.userName}</formalExpression>
+               <formalExpression>${initiator.properties.userName}</formalExpression>
             </resourceAssignmentExpression>
          </humanPerformer>
       </userTask>
