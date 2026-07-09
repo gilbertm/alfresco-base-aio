@@ -20,4 +20,12 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
+    <!--
+        Custom Java delegate for the review workflow.
+        Called by the service task in review-process.bpmn20.xml via activiti:class.
+        To use dependency injection, switch to activiti:delegateExpression="${reviewNotificationDelegate}"
+        in the BPMN and remove the class attribute.
+    -->
+    <bean id="reviewNotificationDelegate" class="ae.ac.cud.workflow.ReviewNotificationDelegate" />
+
 </beans>

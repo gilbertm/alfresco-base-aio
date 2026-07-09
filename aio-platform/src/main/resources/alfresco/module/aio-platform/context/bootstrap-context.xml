@@ -31,11 +31,17 @@
                     <prop key="location">alfresco/module/${project.artifactId}/workflow/sample-process.bpmn20.xml</prop>
                     <prop key="mimetype">text/xml</prop>
                 </props>
+                <props>
+                    <prop key="engineId">activiti</prop>
+                    <prop key="location">alfresco/module/${project.artifactId}/workflow/review-process.bpmn20.xml</prop>
+                    <prop key="mimetype">text/xml</prop>
+                </props>
             </list>
         </property>
         <property name="labels">
             <list>
                 <value>alfresco/module/${project.artifactId}/messages/workflow-messages</value>
+                <value>alfresco/module/${project.artifactId}/messages/review-workflow-messages</value>
             </list>
         </property>
     </bean>

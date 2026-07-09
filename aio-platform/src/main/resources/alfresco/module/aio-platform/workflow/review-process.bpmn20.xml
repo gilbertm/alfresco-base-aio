@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<definitions
+        xmlns:activiti="http://activiti.org/bpmn"
+        xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" typeLanguage="http://www.w3.org/2001/XMLSchema"
+        expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+
+   <!--
+       Review Process — a custom workflow that:
+       1. A user starts the workflow on a document
+       2. A review task is assigned to the initiator (for demo purposes)
+       3. After the review task completes, a JavaDelegate logs a "file reviewed" notification
+       4. The process ends
+   -->
+   <process id="review-process">
+
+      <!-- Start event — uses a standard Alfresco start task form -->
+      <startEvent id="start" activiti:formKey="wf:submitAdhocTask"/>
+      <sequenceFlow id="flow1" sourceRef="start" targetRef="reviewTask"/>
+
+      <!-- Review user task — assigned to the workflow initiator -->
+      <userTask id="reviewTask" name="Review Document" activiti:formKey="wf:adhocTask">
+         <humanPerformer>
+            <resourceAssignmentExpression>
+               <formalExpression>${initiator.properties.userName}</formalExpression>
+            </resourceAssignmentExpression>
+         </humanPerformer>
+      </userTask>
+      <sequenceFlow id="flow2" sourceRef="reviewTask" targetRef="notificationServiceTask"/>
+
+      <!-- Service task — invokes the custom JavaDelegate to log/popup a notification -->
+      <serviceTask id="notificationServiceTask"
+                   name="Send Review Notification"
+                   activiti:class="ae.ac.cud.workflow.ReviewNotificationDelegate"/>
+      <sequenceFlow id="flow3" sourceRef="notificationServiceTask" targetRef="end"/>
+
+      <endEvent id="end"/>
+
+   </process>
+
+</definitions>
