@@ -13,6 +13,7 @@
             <list>
                 <value>alfresco/module/${project.artifactId}/model/content-model.xml</value>
                 <value>alfresco/module/${project.artifactId}/model/workflow-model.xml</value>
+                <value>alfresco/module/${project.artifactId}/model/advance-workflow-model.xml</value>
             </list>
         </property>
         <property name="labels">
@@ -36,12 +37,18 @@
                     <prop key="location">alfresco/module/${project.artifactId}/workflow/review-process.bpmn20.xml</prop>
                     <prop key="mimetype">text/xml</prop>
                 </props>
+                <props>
+                    <prop key="engineId">activiti</prop>
+                    <prop key="location">alfresco/module/${project.artifactId}/workflow/advance-review-process.bpmn20.xml</prop>
+                    <prop key="mimetype">text/xml</prop>
+                </props>
             </list>
         </property>
         <property name="labels">
             <list>
                 <value>alfresco/module/${project.artifactId}/messages/workflow-messages</value>
                 <value>alfresco/module/${project.artifactId}/messages/review-workflow-messages</value>
+                <value>alfresco/module/${project.artifactId}/messages/advance-workflow-messages</value>
             </list>
         </property>
     </bean>

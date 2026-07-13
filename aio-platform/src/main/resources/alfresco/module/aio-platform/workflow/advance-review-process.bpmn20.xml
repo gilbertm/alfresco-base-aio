@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<definitions
+        xmlns:activiti="http://activiti.org/bpmn"
+        xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        typeLanguage="http://www.w3.org/2001/XMLSchema"
+        expressionLanguage="http://www.w3.org/1999/XPath"
+        targetNamespace="http://www.activiti.org/test">
+
+    <!--
+        Advanced Review Process — a multi-stage review and approval workflow:
+        1. Peer Review — assigned via acmewadv:peerReviewer from start form
+        2. Manager Approval — assigned via acmewadv:managerReviewer from start form
+        3. Final Sign-Off — assigned via acmewadv:seniorReviewer from start form
+        4. Notification — sends email and in-app notifications
+        5. Audit — logs the final decision to the audit trail
+
+        Task assignment uses ReviewAssignmentDelegate because custom d:noderef
+        properties are stored as raw node reference strings, not ActivitiScriptNode
+        objects, so EL expressions like ${acmewadv_peerReviewer.properties.userName}
+        do not resolve. The delegate reads the variable and sets the assignee.
+    -->
+    <process id="advance-review-process" name="Advanced Review and Approval">
+
+        <!-- Start event — uses custom start form with all three reviewer selectors -->
+        <startEvent id="start" activiti:formKey="acmewadv:advanceReviewStart"/>
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="peerReviewTask"/>
+
+        <!-- Peer review — assigned via ReviewAssignmentDelegate from acmewadv:peerReviewer -->
+        <userTask id="peerReviewTask" name="Peer Review"
+                  activiti:formKey="acmewadv:advanceReviewTask"
+                  activiti:taskListener="${advanceReviewTaskListener}">
+            <extensionElements>
+                <activiti:taskListener event="create"
+                                       activiti:class="ae.ac.cud.workflow.advance.ReviewAssignmentDelegate" />
+            </extensionElements>
+        </userTask>
+        <sequenceFlow id="flow2" sourceRef="peerReviewTask" targetRef="managerApprovalTask"/>
+
+        <!-- Manager approval — assigned via ReviewAssignmentDelegate from acmewadv:managerReviewer -->
+        <userTask id="managerApprovalTask" name="Manager Approval"
+                  activiti:formKey="acmewadv:advanceReviewTask"
+                  activiti:taskListener="${advanceReviewTaskListener}">
+            <extensionElements>
+                <activiti:taskListener event="create"
+                                       activiti:class="ae.ac.cud.workflow.advance.ReviewAssignmentDelegate" />
+            </extensionElements>
+        </userTask>
+        <sequenceFlow id="flow3" sourceRef="managerApprovalTask" targetRef="finalSignOffTask"/>
+
+        <!-- Final sign-off — assigned via ReviewAssignmentDelegate from acmewadv:seniorReviewer -->
+        <userTask id="finalSignOffTask" name="Final Sign-Off"
+                  activiti:formKey="acmewadv:advanceReviewTask"
+                  activiti:taskListener="${advanceReviewTaskListener}">
+            <extensionElements>
+                <activiti:taskListener event="create"
+                                       activiti:class="ae.ac.cud.workflow.advance.ReviewAssignmentDelegate" />
+            </extensionElements>
+        </userTask>
+        <sequenceFlow id="flow4" sourceRef="finalSignOffTask" targetRef="exclusiveGateway"/>
+
+        <!-- Decision gateway -->
+        <exclusiveGateway id="exclusiveGateway" name="Approval Decision"/>
+        <sequenceFlow id="flowApproved" sourceRef="exclusiveGateway" targetRef="notificationService">
+            <conditionExpression xsi:type="tFormalExpression">${approved == true}</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flowRejected" sourceRef="exclusiveGateway" targetRef="notificationService">
+            <conditionExpression xsi:type="tFormalExpression">${approved == false}</conditionExpression>
+        </sequenceFlow>
+
+        <!-- Notification service task -->
+        <serviceTask id="notificationService"
+                     name="Send Notifications"
+                     activiti:class="ae.ac.cud.workflow.advance.NotificationDelegate"/>
+        <sequenceFlow id="flow5" sourceRef="notificationService" targetRef="auditService"/>
+
+        <!-- Audit service task -->
+        <serviceTask id="auditService"
+                     name="Audit Trail"
+                     activiti:class="ae.ac.cud.workflow.advance.AuditDelegate"/>
+        <sequenceFlow id="flow6" sourceRef="auditService" targetRef="end"/>
+
+        <endEvent id="end"/>
+
+    </process>
+
+</definitions>

@@ -416,5 +416,65 @@
         </forms>
     </config>
 
+    <!-- Advanced Workflow: Task form for acmewadv:advanceReviewTask -->
+    <config evaluator="string-compare" condition="acmewadv:advanceReviewTask">
+        <forms>
+            <form>
+                <field-visibility>
+                    <show id="acmewadv:reviewComment" />
+                    <show id="acmewadv:approved" />
+                </field-visibility>
+                <appearance>
+                    <field id="acmewadv:reviewComment" label="Review Comment">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
+                    </field>
+                    <field id="acmewadv:approved" label="Approved">
+                        <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
 
+    <!-- Advanced Workflow: Start form for acmewadv:advanceReviewStart -->
+    <config evaluator="string-compare" condition="acmewadv:advanceReviewStart">
+        <forms>
+            <form>
+                <field-visibility>
+                    <show id="bpm:workflowDescription" />
+                    <show id="acmewadv:peerReviewer" />
+                    <show id="acmewadv:managerReviewer" />
+                    <show id="acmewadv:seniorReviewer" />
+                    <show id="acmewadv:reviewDeadline" />
+                    <show id="acmewadv:escalationTimeout" />
+                </field-visibility>
+                <appearance>
+                    <field id="bpm:workflowDescription" label="Description">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
+                    </field>
+                     <field id="acmewadv:peerReviewer" label="Peer Reviewer">
+                        <control template="/org/alfresco/components/form/controls/association.ftl">
+                            <control-param name="compactMode">true</control-param>
+                        </control>
+                    </field>
+                    <field id="acmewadv:managerReviewer" label="Manager Reviewer">
+                        <control template="/org/alfresco/components/form/controls/association.ftl">
+                            <control-param name="compactMode">true</control-param>
+                        </control>
+                    </field>
+                    <field id="acmewadv:seniorReviewer" label="Senior Reviewer">
+                        <control template="/org/alfresco/components/form/controls/association.ftl">
+                            <control-param name="compactMode">true</control-param>
+                        </control>
+                    </field>
+                    <field id="acmewadv:reviewDeadline" label="Review Deadline">
+                        <control template="/org/alfresco/components/form/controls/date.ftl" />
+                    </field>
+                    <field id="acmewadv:escalationTimeout" label="Escalation Timeout (hours)">
+                        <control template="/org/alfresco/components/form/controls/textfield.ftl" />
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
 </alfresco-config>

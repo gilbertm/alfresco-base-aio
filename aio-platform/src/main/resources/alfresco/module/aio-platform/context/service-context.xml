@@ -28,4 +28,17 @@
     -->
     <bean id="reviewNotificationDelegate" class="ae.ac.cud.workflow.ReviewNotificationDelegate" />
 
+    <!-- Advanced workflow delegates -->
+    <bean id="advanceNotificationDelegate"
+          class="ae.ac.cud.workflow.advance.NotificationDelegate" />
+
+    <bean id="advanceAuditDelegate"
+          class="ae.ac.cud.workflow.advance.AuditDelegate" />
+
+    <bean id="advanceReviewTaskListener"
+          class="ae.ac.cud.workflow.advance.AdvanceReviewTaskListener" />
+
+    <bean id="reviewAssignmentDelegate"
+          class="ae.ac.cud.workflow.advance.ReviewAssignmentDelegate" />
+
 </beans>

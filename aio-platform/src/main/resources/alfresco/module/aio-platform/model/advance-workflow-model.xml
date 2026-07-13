@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model name="acmewadv:advanceWorkflowModel" xmlns="http://www.alfresco.org/model/dictionary/1.0">
+    <description>Advanced Review Workflow Model</description>
+    <author>My Name</author>
+    <version>1.0</version>
+
+    <imports>
+        <import uri="http://www.alfresco.org/model/dictionary/1.0" prefix="d"/>
+        <import uri="http://www.alfresco.org/model/content/1.0" prefix="cm"/>
+        <import uri="http://www.alfresco.org/model/bpm/1.0" prefix="bpm"/>
+    </imports>
+
+    <namespaces>
+        <namespace uri="http://www.acme.org/model/advance-workflow/1.0" prefix="acmewadv"/>
+    </namespaces>
+
+    <types>
+        <type name="acmewadv:advanceReviewStart">
+            <parent>bpm:startTask</parent>
+            <properties>
+                <property name="acmewadv:reviewDeadline">
+                    <title>Review Deadline</title>
+                    <type>d:date</type>
+                    <mandatory>false</mandatory>
+                </property>
+                <property name="acmewadv:escalationTimeout">
+                    <title>Escalation Timeout (hours)</title>
+                    <type>d:int</type>
+                    <default>72</default>
+                </property>
+            </properties>
+            <associations>
+                <association name="acmewadv:managerReviewer">
+                    <title>Manager Reviewer</title>
+                    <source>
+                        <mandatory>true</mandatory>
+                        <many>false</many>
+                    </source>
+                    <target>
+                        <class>cm:person</class>
+                        <mandatory>true</mandatory>
+                        <many>false</many>
+                    </target>
+                </association>
+                <association name="acmewadv:peerReviewer">
+                    <title>Peer Reviewer</title>
+                    <source>
+                        <mandatory>true</mandatory>
+                        <many>false</many>
+                    </source>
+                    <target>
+                        <class>cm:person</class>
+                        <mandatory>true</mandatory>
+                        <many>false</many>
+                    </target>
+                </association>
+                <association name="acmewadv:seniorReviewer">
+                    <title>Senior Reviewer</title>
+                    <source>
+                        <mandatory>true</mandatory>
+                        <many>false</many>
+                    </source>
+                    <target>
+                        <class>cm:person</class>
+                        <mandatory>true</mandatory>
+                        <many>false</many>
+                    </target>
+                </association>
+            </associations>
+        </type>
+        <type name="acmewadv:advanceReviewTask">
+            <parent>bpm:workflowTask</parent>
+            <properties>
+                <property name="acmewadv:reviewComment">
+                    <title>Review Comment</title>
+                    <type>d:mltext</type>
+                    <mandatory>false</mandatory>
+                </property>
+                <property name="acmewadv:approved">
+                    <title>Approved</title>
+                    <type>d:boolean</type>
+                    <mandatory>true</mandatory>
+                </property>
+            </properties>
+        </type>
+    </types>
+</model>
