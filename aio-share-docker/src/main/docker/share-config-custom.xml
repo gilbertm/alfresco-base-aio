@@ -101,6 +101,21 @@
             </endpoint>
         </remote>
     </config>
+    <!-- CUD Custom Theme registration -->
+    <config evaluator="string-compare" condition="Themes">
+        <themes>
+            <theme>
+                <id>CUDCustomTheme</id>
+                <title>CUD Custom Theme</title>
+                <title-id>theme.CUDCustomTheme</title-id>
+                <css-tokens>
+                    <token>/themes/CUDCustomTheme/presentation.css</token>
+                    <token>/themes/CUDCustomTheme/yui/assets/skin.css</token>
+                </css-tokens>
+            </theme>
+        </themes>
+    </config>
+
     <config evaluator="string-compare" condition="Users" replace="true">
         <users>
             <username-min-length>2</username-min-length>

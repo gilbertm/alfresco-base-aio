@@ -416,6 +416,26 @@
         </forms>
     </config>
 
+    <!-- CUD Custom Theme registration -->
+    <config evaluator="string-compare" condition="Themes">
+        <themes>
+            <theme>
+                <id>CUDCustomTheme</id>
+                <title>CUD Custom Theme</title>
+                <title-id>theme.CUDCustomTheme</title-id>
+                <css-tokens>
+                    <token>/themes/CUDCustomTheme/presentation.css</token>
+                    <token>/themes/CUDCustomTheme/yui/assets/skin.css</token>
+                </css-tokens>
+            </theme>
+        </themes>
+    </config>
+
+    <!-- Make CUDCustomTheme the default for all sites -->
+    <config evaluator="string-compare" condition="Site" replace="true">
+        <theme>CUDCustomTheme</theme>
+    </config>
+
     <!-- Advanced Workflow: Task form for acmewadv:advanceReviewTask -->
     <config evaluator="string-compare" condition="acmewadv:advanceReviewTask">
         <forms>
