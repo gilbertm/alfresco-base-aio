@@ -1,0 +1,6 @@
+<webscript>
+    <shortname>Custom CUD Login</shortname>
+    <description>Overrides the default Alfresco Share login page</description>
+    <url>/components/guest/login</url>
+    <authentication>none</authentication>
+</webscript>

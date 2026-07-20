@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<theme>
+   <title>CUD Custom Theme</title>
+   <title-id>theme.CUDCustomTheme</title-id>
+   <css-tokens>
+      <!-- Base layout and structural styles -->
+      <token>/themes/CUDCustomTheme/presentation.css</token>
+      <!-- YUI skin overrides -->
+      <token>/themes/CUDCustomTheme/yui/assets/skin.css</token>
+   </css-tokens>
+</theme>

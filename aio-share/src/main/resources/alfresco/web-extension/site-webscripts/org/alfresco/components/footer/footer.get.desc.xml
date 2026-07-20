@@ -1,0 +1,6 @@
+<webscript>
+    <shortname>Custom CUD Footer</shortname>
+    <description>Overrides default Share footer with CUD branding</description>
+    <url>/components/footer/footer</url>
+    <authentication>user</authentication>
+</webscript>

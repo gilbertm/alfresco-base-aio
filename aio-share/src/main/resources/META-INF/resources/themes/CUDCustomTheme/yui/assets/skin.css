@@ -1,0 +1,113 @@
+/**
+ * CUD Custom Theme — YUI Skin CSS
+ * YUI component styling
+ *
+ * Brand Colors:
+ *   Primary:   #003366   (Navy)
+ *   Accent:    #c8102e   (Red)
+ */
+
+/* ---- YUI Data Table ---- */
+.alfresco-share .yui-dt th {
+    background-color: #003366 !important;
+    color: #ffffff !important;
+    border-color: #002244 !important;
+}
+
+.alfresco-share .yui-dt tr.yui-dt-even td {
+    background-color: #f9f9f9 !important;
+}
+
+.alfresco-share .yui-dt tr.yui-dt-odd td {
+    background-color: #ffffff !important;
+}
+
+.alfresco-share .yui-dt tr.yui-dt-even td:hover,
+.alfresco-share .yui-dt tr.yui-dt-odd td:hover {
+    background-color: #e8f0f8 !important;
+}
+
+/* ---- YUI Menu ---- */
+.alfresco-share .yuimenu .bd {
+    background-color: #ffffff !important;
+    border: 1px solid #d0d0d0 !important;
+}
+
+.alfresco-share .yuimenu a {
+    color: #333333 !important;
+}
+
+.alfresco-share .yuimenu a:hover {
+    background-color: #003366 !important;
+    color: #ffffff !important;
+}
+
+/* ---- YUI Panel / Dialog ---- */
+.alfresco-share .yui-panel {
+    background-color: #ffffff !important;
+    border: 1px solid #003366 !important;
+}
+
+.alfresco-share .yui-panel .hd {
+    background-color: #003366 !important;
+    color: #ffffff !important;
+    padding: 8px 12px !important;
+    font-weight: 600 !important;
+}
+
+.alfresco-share .yui-panel .bd {
+    padding: 12px !important;
+    background-color: #ffffff !important;
+}
+
+.alfresco-share .yui-panel .ft {
+    background-color: #f5f5f5 !important;
+    border-top: 1px solid #e0e0e0 !important;
+    padding: 8px 12px !important;
+}
+
+/* ---- YUI Tab View ---- */
+.alfresco-share .yui-navset .yui-nav a {
+    background-color: #e0e0e0 !important;
+    color: #333333 !important;
+}
+
+.alfresco-share .yui-navset .yui-nav .selected a {
+    background-color: #003366 !important;
+    color: #ffffff !important;
+}
+
+/* ---- YUI Button ---- */
+.alfresco-share .yuibutton button,
+.alfresco-share .yuibutton input[type="button"],
+.alfresco-share .yuibutton input[type="submit"] {
+    background-color: #c8102e !important;
+    border: 1px solid #a00d25 !important;
+    color: #ffffff !important;
+}
+
+.alfresco-share .yuibutton button:hover,
+.alfresco-share .yuibutton input[type="button"]:hover {
+    background-color: #e01234 !important;
+}
+
+/* ---- YUI Calendar ---- */
+.alfresco-share .yui-calendar .calheader {
+    background-color: #003366 !important;
+    color: #ffffff !important;
+}
+
+.alfresco-share .yui-calendar .calheader a {
+    color: #ffffff !important;
+}
+
+/* ---- YUI Progress Bar ---- */
+.alfresco-share .yui-pbar .yui-pbar-bar {
+    background-color: #003366 !important;
+}
+
+/* ---- YUI Overlay ---- */
+.alfresco-share .yui-overlay {
+    background-color: #ffffff !important;
+    border: 1px solid #003366 !important;
+}
