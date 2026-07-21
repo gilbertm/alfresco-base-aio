@@ -1,0 +1,16 @@
+<!--
+  AIO Platform — HelloUniverse List Web Script Descriptor
+  ========================================================
+  File: aio-platform/src/main/resources/alfresco/extension/templates/webscripts/alfresco/tutorials/hellouniverse-list.get.desc.xml
+  Role: Descriptor for GET /sample/hellouniverse — list all records
+  Authentication: user
+  Format: json
+-->
+<webscript>
+    <shortname>HelloUniverse List</shortname>
+    <description>List all universe records</description>
+    <url>/sample/hellouniverse</url>
+    <authentication>user</authentication>
+    <format default="json">argument</format>
+    <lifecycle>sample</lifecycle>
+</webscript>

@@ -1,0 +1,16 @@
+<!--
+  AIO Platform — HelloUniverse Delete Web Script Descriptor
+  =========================================================
+  File: aio-platform/src/main/resources/alfresco/extension/templates/webscripts/alfresco/tutorials/hellouniverse.delete.desc.xml
+  Role: Descriptor for DELETE /sample/hellouniverse/node?id={id} — delete a record
+  Authentication: user
+  Format: json
+-->
+<webscript>
+    <shortname>HelloUniverse Delete</shortname>
+    <description>Delete a universe record</description>
+    <url>/sample/hellouniverse/node</url>
+    <authentication>user</authentication>
+    <format default="json">argument</format>
+    <lifecycle>sample</lifecycle>
+</webscript>

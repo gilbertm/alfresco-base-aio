@@ -1,0 +1,16 @@
+<!--
+  AIO Platform — HelloUniverse Create Web Script Descriptor
+  =========================================================
+  File: aio-platform/src/main/resources/alfresco/extension/templates/webscripts/alfresco/tutorials/hellouniverse.post.desc.xml
+  Role: Descriptor for POST /sample/hellouniverse — create a record
+  Authentication: user
+  Format: json
+-->
+<webscript>
+    <shortname>HelloUniverse Create</shortname>
+    <description>Create a new universe record</description>
+    <url>/sample/hellouniverse</url>
+    <authentication>user</authentication>
+    <format default="json">argument</format>
+    <lifecycle>sample</lifecycle>
+</webscript>

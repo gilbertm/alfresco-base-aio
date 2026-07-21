@@ -1,0 +1,16 @@
+<!--
+  AIO Platform — HelloUniverse Update Web Script Descriptor
+  =========================================================
+  File: aio-platform/src/main/resources/alfresco/extension/templates/webscripts/alfresco/tutorials/hellouniverse.put.desc.xml
+  Role: Descriptor for PUT /sample/hellouniverse/node?id={id} — update a record
+  Authentication: user
+  Format: json
+-->
+<webscript>
+    <shortname>HelloUniverse Update</shortname>
+    <description>Update a universe record</description>
+    <url>/sample/hellouniverse/node</url>
+    <authentication>user</authentication>
+    <format default="json">argument</format>
+    <lifecycle>sample</lifecycle>
+</webscript>

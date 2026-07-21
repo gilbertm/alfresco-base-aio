@@ -1,0 +1,16 @@
+<!--
+  AIO Platform — HelloUniverse Get Web Script Descriptor
+  ======================================================
+  File: aio-platform/src/main/resources/alfresco/extension/templates/webscripts/alfresco/tutorials/hellouniverse.get.desc.xml
+  Role: Descriptor for GET /sample/hellouniverse/node?id={id} — retrieve one record
+  Authentication: user
+  Format: json
+-->
+<webscript>
+    <shortname>HelloUniverse Get</shortname>
+    <description>Get a universe record by id</description>
+    <url>/sample/hellouniverse/node</url>
+    <authentication>user</authentication>
+    <format default="json">argument</format>
+    <lifecycle>sample</lifecycle>
+</webscript>
