@@ -1,0 +1,210 @@
+swagger: '2.0'
+info:
+  description: |
+    **HelloUniverse API**
+
+    CRUD operations for the `acme:universeRecord` content type (planet records).
+
+    All endpoints require **HTTP Basic Authentication** (user role). Click the **Authorize** button to enter credentials.
+  version: '1'
+  title: HelloUniverse API
+basePath: /alfresco/service
+securityDefinitions:
+  basicAuth:
+    type: basic
+    description: HTTP Basic Authentication — use your Alfresco username and password
+security:
+  - basicAuth: []
+consumes:
+  - application/json
+produces:
+  - application/json
+tags:
+  - name: universe-records
+    description: Manage planet/universe records
+paths:
+  /sample/hellouniverse:
+    get:
+      tags:
+        - universe-records
+      summary: List all universe records
+      description: Returns all `acme:universeRecord` nodes in the repository.
+      operationId: listUniverseRecords
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/UniverseRecordList'
+        '401':
+          description: Authentication required
+    post:
+      tags:
+        - universe-records
+      summary: Create a new universe record
+      description: Creates a new `acme:universeRecord` node under Company Home.
+      operationId: createUniverseRecord
+      security:
+        - basicAuth: []
+      parameters:
+        - in: body
+          name: body
+          description: Universe record to create
+          required: true
+          schema:
+            $ref: '#/definitions/UniverseRecordInput'
+      responses:
+        '200':
+          description: Record created
+          schema:
+            $ref: '#/definitions/UniverseRecord'
+        '400':
+          description: Missing required field (planetName)
+        '401':
+          description: Authentication required
+  /sample/hellouniverse/node:
+    get:
+      tags:
+        - universe-records
+      summary: Get a universe record by ID
+      description: Retrieve a single `acme:universeRecord` by its node UUID.
+      operationId: getUniverseRecord
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: query
+          description: Node UUID of the universe record
+          type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/UniverseRecord'
+        '401':
+          description: Authentication required
+        '404':
+          description: Record not found
+    put:
+      tags:
+        - universe-records
+      summary: Update a universe record
+      description: Partially update an existing `acme:universeRecord` by its node UUID. Only fields provided in the body will be changed.
+      operationId: updateUniverseRecord
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: query
+          description: Node UUID of the universe record
+          type: string
+          required: true
+        - in: body
+          name: body
+          description: Fields to update (any subset of planetName, galaxy, distanceFromEarth, habitable)
+          required: true
+          schema:
+            $ref: '#/definitions/UniverseRecordInput'
+      responses:
+        '200':
+          description: Record updated
+          schema:
+            $ref: '#/definitions/UniverseRecord'
+        '401':
+          description: Authentication required
+        '404':
+          description: Record not found
+    delete:
+      tags:
+        - universe-records
+      summary: Delete a universe record
+      description: Permanently delete an `acme:universeRecord` by its node UUID.
+      operationId: deleteUniverseRecord
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: query
+          description: Node UUID of the universe record
+          type: string
+          required: true
+      responses:
+        '200':
+          description: Record deleted
+          schema:
+            $ref: '#/definitions/DeleteResponse'
+        '401':
+          description: Authentication required
+        '404':
+          description: Record not found
+definitions:
+  UniverseRecordInput:
+    type: object
+    required:
+      - planetName
+    properties:
+      planetName:
+        type: string
+        description: Name of the planet (required)
+        example: Kepler-442b
+      galaxy:
+        type: string
+        description: Name of the galaxy
+        example: Milky Way
+      distanceFromEarth:
+        type: number
+        format: double
+        description: Distance from Earth in light years
+        example: 1206.0
+      habitable:
+        type: boolean
+        description: Whether the planet is potentially habitable
+        example: true
+        default: false
+  UniverseRecord:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Node UUID
+      nodeRef:
+        type: string
+        description: Full node reference (workspace://SpacesStore/...)
+      name:
+        type: string
+        description: Node name (planetName + .txt)
+      planetName:
+        type: string
+        description: Planet name
+      galaxy:
+        type: string
+        description: Galaxy name
+      distanceFromEarth:
+        type: number
+        format: double
+        description: Distance from Earth in light years
+      habitable:
+        type: boolean
+        description: Habitability flag
+      created:
+        type: boolean
+        description: Present on create response only
+  UniverseRecordList:
+    type: object
+    properties:
+      count:
+        type: integer
+        description: Number of records
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/UniverseRecord'
+  DeleteResponse:
+    type: object
+    properties:
+      deleted:
+        type: boolean
+      id:
+        type: string
