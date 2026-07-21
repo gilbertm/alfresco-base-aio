@@ -17,7 +17,7 @@
 
     <!-- Custom namespace for the ACME company -->
     <namespaces>
-        <namespace uri="http://www.acme.org/model/content/1.0" prefix="acme"/>
+        <namespace uri="http://www.acme.org/model/aio/1.0" prefix="acme"/>
     </namespaces>
 
     <constraints>
@@ -56,6 +56,32 @@
             <mandatory-aspects>
                 <aspect>acme:securityClassified</aspect>
             </mandatory-aspects>
+        </type>
+
+        <!-- HelloUniverse CRUD API — Universe Record Type -->
+        <type name="acme:universeRecord">
+            <title>Universe Record</title>
+            <parent>cm:content</parent>
+            <properties>
+                <property name="acme:planetName">
+                    <title>Planet Name</title>
+                    <type>d:text</type>
+                    <mandatory>true</mandatory>
+                </property>
+                <property name="acme:galaxy">
+                    <title>Galaxy</title>
+                    <type>d:text</type>
+                </property>
+                <property name="acme:distanceFromEarth">
+                    <title>Distance from Earth (light years)</title>
+                    <type>d:double</type>
+                </property>
+                <property name="acme:habitable">
+                    <title>Potentially Habitable</title>
+                    <type>d:boolean</type>
+                    <default>false</default>
+                </property>
+            </properties>
         </type>
     </types>
 

@@ -44,7 +44,7 @@ services:
     volumes:
       - aio-db-volume:/var/lib/postgresql/data
   aio-ass:
-    image: alfresco/alfresco-search-services:2.0.15
+    image: alfresco/alfresco-search-services:2.0.21
     environment:
       SOLR_ALFRESCO_HOST: aio-acs
       SOLR_ALFRESCO_PORT: 8080
