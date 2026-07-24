@@ -54,4 +54,19 @@
           class="ae.ac.cud.tutorials.HelloUniverseDelete"
           parent="webscript.alfresco.tutorials.hellouniverse.base" />
 
+    <!-- ============================================================
+          CUD Customs — User Seed API
+          ============================================================
+          POST /custom/seed-users — reads bundled Excel from classpath
+          for batch registration (no external file upload required)
+          ============================================================ -->
+
+    <bean id="webscript.alfresco.customs.users-seed.post"
+          class="ae.ac.cud.customs.UserSeedPost">
+        <property name="nodeService" ref="NodeService" />
+        <property name="personService" ref="PersonService" />
+        <property name="authenticationService" ref="AuthenticationService" />
+        <property name="namespaceService" ref="NamespaceService" />
+    </bean>
+
 </beans>

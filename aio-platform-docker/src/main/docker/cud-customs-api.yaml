@@ -1,0 +1,94 @@
+swagger: '2.0'
+info:
+  description: |
+    **CUD Customs API**
+
+    Custom administrative endpoints for Canadian University Dubai.
+
+    ## User Seeding (Batch Registration)
+    Send a POST request to batch-register users from the bundled seed file
+    (`alfresco_seed_data.xlsx` shipped inside the AMP). No external file upload is required.
+
+    **Required columns:** firstName, lastName, email, password
+    **Optional columns:** organization, jobTitle, location, telephone
+
+    **Usage:** Simply POST to the endpoint — the seed data is read from the classpath:
+    ```
+    curl -u admin:admin -X POST \
+      "http://localhost:8080/alfresco/service/custom/seed-users"
+    ```
+
+    The endpoint creates Person + Authentication entries for each row. Existing users (by email) are skipped.
+  version: '1'
+  title: CUD Customs API
+basePath: /alfresco/service
+securityDefinitions:
+  basicAuth:
+    type: basic
+    description: HTTP Basic Authentication — use your Alfresco username and password
+security:
+  - basicAuth: []
+produces:
+  - application/json
+tags:
+  - name: user-seeding
+    description: Batch user registration from Excel files
+paths:
+  /custom/seed-users:
+    post:
+      tags:
+        - user-seeding
+      summary: Batch register users from bundled Excel seed file
+      description: >
+        Triggers batch user registration using the bundled Excel seed file
+        (`alfresco_seed_data.xlsx`) shipped inside the AMP. No file upload needed.
+
+        **Required columns:** firstName, lastName, email, password
+
+        **Optional columns:** organization, jobTitle, location, telephone
+
+        The endpoint creates both Person and Authentication entries for each row.
+        Existing users (matched by email) are skipped.
+      operationId: seedUsers
+      security:
+        - basicAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Processing completed
+          schema:
+            $ref: '#/definitions/SeedResponse'
+        '400':
+          description: Missing required columns or empty file
+        '401':
+          description: Authentication required
+definitions:
+  SeedUserEntry:
+    type: object
+    properties:
+      row:
+        type: integer
+      status:
+        type: string
+        enum: [created, skipped, error]
+      username:
+        type: string
+      nodeRef:
+        type: string
+      reason:
+        type: string
+  SeedResponse:
+    type: object
+    properties:
+      total_rows:
+        type: integer
+      created:
+        type: integer
+      skipped:
+        type: integer
+      errors:
+        type: integer
+      users:
+        type: array
+        items:
+          $ref: '#/definitions/SeedUserEntry'

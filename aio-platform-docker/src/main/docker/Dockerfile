@@ -20,14 +20,16 @@ COPY disable-webscript-caching-context.xml $TOMCAT_DIR/shared/classes/alfresco/e
 # Copy Dockerfile to avoid an error if no license file exists
 COPY Dockerfile license/*.* $TOMCAT_DIR/webapps/alfresco/WEB-INF/classes/alfresco/extension/license/
 
-# Copy custom Swagger YAML into api-explorer
-COPY hellouniverse-api.yaml $TOMCAT_DIR/webapps/api-explorer/definitions/
+# Copy custom Swagger YAML specs into api-explorer
+COPY hellouniverse-api.yaml cud-customs-api.yaml $TOMCAT_DIR/webapps/api-explorer/definitions/
 
-# Inject HelloUniverse API into api-explorer Swagger UI
-# Step 1: Add comma to SCIM line (it was the last item, now it won't be)
-# Step 2: Insert HelloUniverse line after the SCIM line
+# Inject custom APIs into api-explorer Swagger UI
+# Step 1: Add comma to SCIM line (was last, now new entries follow)
+# Step 2: Insert CUD Customs API entry after SCIM
+# Step 3: Insert HelloUniverse API entry after CUD Customs
 RUN sed -i 's/{url: "definitions\/alfresco-scim-v2.yaml",  name: "SCIM 2.0 API"}/{url: "definitions\/alfresco-scim-v2.yaml",  name: "SCIM 2.0 API"},/' $TOMCAT_DIR/webapps/api-explorer/index.html && \
-    sed -i '/SCIM 2.0 API"},/a\        {url: "definitions/hellouniverse-api.yaml",  name: "HelloUniverse API"},' $TOMCAT_DIR/webapps/api-explorer/index.html
+    sed -i '/SCIM 2.0 API"},/a\        {url: "definitions/cud-customs-api.yaml",    name: "CUD Customs API"},'   $TOMCAT_DIR/webapps/api-explorer/index.html && \
+    sed -i '/CUD Customs API"},/a\        {url: "definitions/hellouniverse-api.yaml",  name: "HelloUniverse API"},' $TOMCAT_DIR/webapps/api-explorer/index.html
 
 # Move the log file
 RUN sed -i -e "s_appender.rolling.fileName\=alfresco.log_appender.rolling.fileName\=${TOMCAT_DIR}/logs\/alfresco.log_" \

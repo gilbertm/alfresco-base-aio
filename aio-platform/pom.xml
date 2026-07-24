@@ -19,6 +19,34 @@
     </dependencies>
 
     <build>
+        <!--
+            Override parent resource filtering: .xlsx files are binary
+            (ZIP format) and must NOT be filtered, otherwise Apache POI
+            will reject them as "unsupported file type: UNKNOWN".
+            The parent POM sets <filtering>true</filtering> by default,
+            which corrupts binary resources.
+
+            combine.self="override" is REQUIRED because Maven merges
+            child <resources> with parent <resources> by default.
+            Without this, the parent's unfiltered resource block
+            (filtering=true, no excludes) still applies.
+        -->
+        <resources combine.self="override">
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>**/*.xlsx</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*.xlsx</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

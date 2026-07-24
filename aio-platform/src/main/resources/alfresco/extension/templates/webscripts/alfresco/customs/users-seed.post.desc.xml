@@ -1,0 +1,8 @@
+<webscript>
+    <shortname>User Seed (Batch Registration)</shortname>
+    <description>Upload an Excel file with user data to batch-register Person + Authentication entries</description>
+    <url>/custom/seed-users</url>
+    <authentication>user</authentication>
+    <format default="json">argument</format>
+    <lifecycle>sample</lifecycle>
+</webscript>
