@@ -16,6 +16,15 @@
         (will be merged with out-of-the-box configured types and aspects)
     =============================================================================================================-->
 
+    <!-- Configure people and group search to show all results without requiring minimum characters -->
+    <config evaluator="string-compare" condition="Search" replace="true">
+        <search>
+            <min-search-term-length>0</min-search-term-length>
+            <max-search-results>100</max-search-results>
+        </search>
+    </config>
+
+
     <config evaluator="string-compare" condition="DocumentLibrary">
         <aspects>
             <visible>
