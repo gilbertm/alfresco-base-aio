@@ -7,10 +7,11 @@
 > | 1 | `UserSeedPost.java` | `aio-platform/src/main/java/ae/ac/cud/customs/` | Java controller — reads bundled Excel from classpath, creates Person + Authentication for each user |
 > | 2 | `users-seed.post.desc.xml` | `aio-platform/src/main/resources/alfresco/extension/templates/webscripts/alfresco/customs/` | Descriptor for `POST /custom/seed-users` — auth: user |
 > | 3 | `users-seed.post.json.ftl` | `aio-platform/src/main/resources/alfresco/extension/templates/webscripts/alfresco/customs/` | FreeMarker template — renders `${result}` |
-> | 4 | `alfresco_seed_data.xlsx` | `aio-platform/src/main/java/ae/ac/cud/customs/` | Bundled Excel seed file — lives alongside UserSeedPost.java in the Java source tree, immune to Maven resource filtering |
+> | 4 | `alfresco_seed_data.xlsx` | `aio-platform/src/main/resources/ae/ac/cud/customs/` | Bundled Excel seed file — classpath resource at `ae/ac/cud/customs/`, protected from Maven resource filtering by POM excludes |
 > | 5 | `webscript-context.xml` | `aio-platform/src/main/resources/alfresco/module/aio-platform/context/` | Spring bean for `UserSeedPost` — injects PersonService, MutableAuthenticationService |
-> | 6 | `cud-customs-api.yaml` | `aio-platform-docker/src/main/docker/` | Swagger 2.0 spec for the "CUD Customs" collection in api-explorer |
-> | 7 | `Dockerfile` | `aio-platform-docker/src/main/docker/` | Copies YAML into api-explorer + injects Swagger UI entry |
+> | 6 | `pom.xml` | `aio-platform/` | POM resource filtering — excludes `*.xlsx` from `${property}` substitution to prevent binary corruption |
+> | 7 | `cud-customs-api.yaml` | `aio-platform-docker/src/main/docker/` | Swagger 2.0 spec for the "CUD Customs" collection in api-explorer |
+> | 8 | `Dockerfile` | `aio-platform-docker/src/main/docker/` | Copies YAML into api-explorer + injects Swagger UI entry |
 
 ---
 
@@ -59,7 +60,8 @@ An administrator needs to register a large number of users quickly. Instead of c
 │                    │                         ▼                     │ │
 │                    │  ┌──────────────────────────────────────────┐ │ │
 │                    │  │ Classpath Resource (alfresco_seed_data   │ │ │
-│                    │  │ .xlsx) loaded via getResourceAsStream()  │ │ │
+│                    │  │ .xlsx) loaded via getClass()             │ │ │
+│                    │  │ .getResourceAsStream()                   │ │ │
 │                    │  └───────────────────┬──────────────────────┘ │ │
 │                    │                      │ row-by-row loop        │ │
 │                    │           ┌──────────┴──────────┐             │ │
@@ -80,7 +82,7 @@ An administrator needs to register a large number of users quickly. Instead of c
 
 ### 2.1 Excel Format
 
-The Excel file must have a **header row** with column names (case-insensitive):
+The Excel file must have a **header row** with column names (case-insensitive, whitespace-trimmed):
 
 | Column | Required | Maps to | Notes |
 |--------|----------|---------|-------|
@@ -101,29 +103,29 @@ The Excel file must have a **header row** with column names (case-insensitive):
 
 **File:** `aio-platform/src/main/java/ae/ac/cud/customs/UserSeedPost.java`
 
-Extends `DeclarativeWebScript` directly (not the `HelloUniverseBase` abstract class — it needs different services).
+Extends `DeclarativeWebScript` directly (not the `HelloUniverseBase` abstract class — it needs different services: PersonService, MutableAuthenticationService).
 
 **Injected services:** `NodeService`, `PersonService`, `MutableAuthenticationService`, `NamespaceService`
 
-**Seed file location:** `ae/ac/cud/customs/alfresco_seed_data.xlsx` on the classpath — placed in the same Java package as `UserSeedPost.java`. Maven's compiler plugin copies non-`.java` files from `src/main/java` to `target/classes` **without resource filtering**, so the binary ZIP/OOXML structure is guaranteed intact.
+**Seed file location:** `ae/ac/cud/customs/alfresco_seed_data.xlsx` on the classpath — stored under `src/main/resources/` at the same package path as the controller class.
 
 **Loading mechanism:**
 ```java
-InputStream is = getClass().getResourceAsStream("alfresco_seed_data.xlsx");
+InputStream is = getClass().getResourceAsStream(SEED_FILENAME);   // SEED_FILENAME = "alfresco_seed_data.xlsx"
 ```
-`Class.getResourceAsStream(name)` resolves relative to the class's own package. Since `UserSeedPost` is in `ae.ac.cud.customs`, this resolves to `ae/ac/cud/customs/alfresco_seed_data.xlsx` on the classpath. No classloader-relative path (which maps to `src/main/resources/`) is needed — this sidesteps Maven resource filtering entirely.
+`Class.getResourceAsStream(name)` resolves relative to the class's own package. Since `UserSeedPost` is in `ae.ac.cud.customs`, this resolves to `ae/ac/cud/customs/alfresco_seed_data.xlsx` on the classpath. At build time, both the compiled `.class` file and the resource file end up in `target/classes/ae/ac/cud/customs/` — the `.class` from the Java source tree and the `.xlsx` from the resources tree. The class-relative resolution works regardless of which source root the file originates from.
 
 **Processing flow:**
 
-1. `getClass().getClassLoader().getResourceAsStream(SEED_FILE_CLASSPATH)` — loads the bundled Excel from the classpath
+1. `getClass().getResourceAsStream(SEED_FILENAME)` — loads the bundled Excel from the classpath
 2. `WorkbookFactory.create(is)` — opens the Excel input stream
 3. `sheet.getRow(0)` — reads header row to build a column index map
-4. Validates that all 4 required columns exist in the header
+4. Validates that all 4 required columns (`firstname`, `lastname`, `email`, `password`) exist in the header (case-insensitive)
 5. Loops through data rows (row 1 to `sheet.getLastRowNum()`)
 6. For each row:
    - `extractUser()` — reads cell values using the column map
    - `authenticationService.authenticationExists()` — checks for duplicates
-   - `personService.createPerson()` — creates the Person node
+   - `personService.createPerson()` — creates the Person node with properties
    - `authenticationService.createAuthentication()` — sets the password
    - `authenticationService.setAuthenticationEnabled()` — enables the account
 7. Returns a JSON response with per-row status and summary counts
@@ -145,7 +147,7 @@ InputStream is = getClass().getResourceAsStream("alfresco_seed_data.xlsx");
 
 **File:** `aio-platform/src/main/resources/alfresco/module/aio-platform/context/webscript-context.xml`
 
-The `UserSeedPost` bean is registered with direct property injection (not using the `HelloUniverseBase` abstract parent):
+The `UserSeedPost` bean is registered with direct property injection:
 
 ```xml
 <bean id="webscript.alfresco.customs.users-seed.post"
@@ -157,18 +159,13 @@ The `UserSeedPost` bean is registered with direct property injection (not using 
 </bean>
 ```
 
-### 3.4 Bundled Seed File
+### 3.4 Bundled Seed File & POM Resource Filtering
 
-**File:** `aio-platform/src/main/java/ae/ac/cud/customs/alfresco_seed_data.xlsx`
+**File:** `aio-platform/src/main/resources/ae/ac/cud/customs/alfresco_seed_data.xlsx`
 
-The Excel spreadsheet lives in the same Java package as `UserSeedPost.java`. This location is chosen deliberately:
+The Excel spreadsheet is a classpath resource in the `ae/ac/cud/customs/` package path under `src/main/resources/`. The controller loads it with class-relative resolution (`getClass().getResourceAsStream()`), which finds it at the same classpath location regardless of which source root it lives in.
 
-1. **Security:** The file is not in `src/main/resources/`, so no web script URL pattern can resolve to it.
-2. **Integrity:** Maven's `maven-compiler-plugin` copies non-`.java` files from `src/main/java` to `target/classes` **without resource filtering**. Unlike files in `src/main/resources/`—which are subject to `${property}` substitution that corrupts binary ZIP/OOXML structures—the `.xlsx` byte stream arrives in the JAR exactly as authored.
-
-#### 3.4.1 Seed File Placement Guide
-
-**Directory tree:**
+#### 3.4.1 Directory Tree
 
 ```
 aio-platform/src/main/
@@ -177,69 +174,101 @@ aio-platform/src/main/
 │       └── ac/
 │           └── cud/
 │               └── customs/
-│                   ├── UserSeedPost.java                ← controller
-│                   └── alfresco_seed_data.xlsx          ← ✅ seed file (same package)
+│                   └── UserSeedPost.java              ← controller
 └── resources/
+    ├── ae/
+    │   └── ac/
+    │       └── cud/
+    │           └── customs/
+    │               └── alfresco_seed_data.xlsx        ← ✅ seed file (classpath: ae/ac/cud/customs/)
     └── alfresco/
         ├── extension/
         │   └── templates/
         │       └── webscripts/
         │           └── alfresco/
-        │               └── customs/                     ← ⚠️ DO NOT put seed files here
-        │                   ├── users-seed.post.desc.xml     (web script engine resolves this dir)
-        │                   ├── users-seed.post.json.ftl
-        │                   └── sample-users.xlsx            (packaged but unsafe)
+        │               └── customs/                   ← web script descriptors (NOT for seed data)
+        │                   ├── users-seed.post.desc.xml
+        │                   └── users-seed.post.json.ftl
         └── module/
             └── aio-platform/
                 └── context/
-                    └── webscript-context.xml            ← Spring bean registration
+                    └── webscript-context.xml          ← Spring bean registration
 ```
 
-**Comparison: `src/main/resources/` vs `src/main/java/`**
+#### 3.4.2 Why `.xlsx` Files Need Special Handling
 
-| Aspect | `src/main/resources/` | `src/main/java/` |
-|--------|----------------------|-------------------|
-| Handled by | `maven-resources-plugin` | `maven-compiler-plugin` |
-| Filtering | `<filtering>true</filtering>` applies `${prop}` substitution (corrupts binary files like `.xlsx`) | No filtering ever — bytes copied as-is |
-| Web-accessible | Files under `alfresco/extension/templates/webscripts/` are resolvable via web script engine URLs | **Never** — Java package paths are not web-addressable |
-| Classpath resolution | `getClassLoader().getResourceAsStream("alfresco/...")` | `getClass().getResourceAsStream("filename.xlsx")` (class-relative) |
+Maven's `maven-resources-plugin` applies `${property}` substitution (resource filtering) to files under `src/main/resources/` by default. Since `.xlsx` files are actually ZIP archives (OOXML format), the binary byte sequences that happen to match `${...}` patterns will be replaced with property values, corrupting the ZIP structure. Apache POI's `WorkbookFactory` will then reject the file with:
 
-**Why `src/main/java/` is the correct location:**
-
-The `"unsupported file type: UNKNOWN"` error occurs because Maven's resource plugin treats `.xlsx` as text and replaces `${...}` byte sequences with property values. This corrupts the ZIP file structure, and Apache POI's `WorkbookFactory` cannot recognize the file signature. By placing the `.xlsx` in `src/main/java/`, it is copied by the compiler plugin which never filters files.
-
-**How the Java code resolves it:**
-
-```java
-// UserSeedPost.java — class-relative resolution
-private static final String SEED_FILENAME = "alfresco_seed_data.xlsx";
-
-// At runtime:
-InputStream is = getClass().getResourceAsStream(SEED_FILENAME);
-//  getClass()             = ae.ac.cud.customs.UserSeedPost
-//  getResourceAsStream()  = resolves relative to the class's package:
-//                           ae/ac/cud/customs/alfresco_seed_data.xlsx
-//
-//  Maven copies this from:
-//    src/main/java/ae/ac/cud/customs/alfresco_seed_data.xlsx
-//  to:
-//    target/classes/ae/ac/cud/customs/alfresco_seed_data.xlsx  (unfiltered!)
+```
+org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException:
+  unsupported file type: UNKNOWN
 ```
 
-**To change or add seed data:**
+#### 3.4.3 The Solution: POM Resource Exclusions
 
-1. Replace `alfresco_seed_data.xlsx` in the Java package directory with your new Excel file (keeping the same filename), **OR**
-2. Add a new `.xlsx` file to the package and update the `SEED_FILENAME` constant in `UserSeedPost.java`
-3. Run `mvn clean package -DskipTests` — the compiler plugin copies non-`.java` files without filtering
+The `aio-platform/pom.xml` uses `combine.self="override"` to replace the parent POM's resource configuration with two resource blocks:
+
+```xml
+<resources combine.self="override">
+    <!-- All resources EXCEPT .xlsx → filtered (property substitution enabled) -->
+    <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <excludes>
+            <exclude>**/*.xlsx</exclude>
+        </excludes>
+    </resource>
+    <!-- .xlsx files ONLY → NO filtering (binary-safe) -->
+    <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <includes>
+            <include>**/*.xlsx</include>
+        </includes>
+    </resource>
+</resources>
+```
+
+| Aspect | First block | Second block |
+|--------|-------------|--------------|
+| Scope | All files except `.xlsx` | `.xlsx` files only |
+| Filtering | `true` — `${property}` substitution applied | `false` — bytes copied as-is |
+| Purpose | Normal resource processing (property placeholders work) | Preserve binary zip structure intact |
+
+The `combine.self="override"` attribute is **critical** — without it, Maven merges child `<resources>` with the parent POM's `<resources>`, and the parent's unfiltered resource block would still apply to `.xlsx` files.
+
+#### 3.4.4 To Change or Add Seed Data
+
+1. Replace `alfresco_seed_data.xlsx` at:
+   ```
+   aio-platform/src/main/resources/ae/ac/cud/customs/alfresco_seed_data.xlsx
+   ```
+   with your new Excel file (keeping the same filename), **OR**
+
+2. Add a new `.xlsx` file anywhere under `src/main/resources/` and update the `SEED_FILENAME` constant and classpath resolution path in `UserSeedPost.java`
+
+3. Run `mvn clean package -DskipTests` — the `.xlsx` will be copied without filtering
+
 4. Redeploy
 
 > **⚠️ Caution:** Passwords in the seed file are stored as plain-text Alfresco authentication credentials. Never commit the `.xlsx` to version control if it contains real production credentials. Use a placeholder file in the repo and inject a real seed file at build/deploy time via CI/CD.
+
+> **Note:** The seed file is not placed under `alfresco/extension/templates/webscripts/` because that directory tree is resolvable by the web script engine URL mechanism. Placing it in a Java-package-structured path under `src/main/resources/` keeps it inaccessible via direct URL while remaining accessible on the classpath.
 
 ### 3.5 Api-Explorer Integration
 
 **File:** `aio-platform-docker/src/main/docker/cud-customs-api.yaml`
 
 The **CUD Customs** collection in the api-explorer documents the seed endpoint — no file upload parameter is needed since the seed data is bundled.
+
+**Dockerfile injection (lines 24-32):** Copies the YAML spec into the api-explorer definitions directory and injects a Swagger UI menu entry via `sed`:
+
+```dockerfile
+COPY hellouniverse-api.yaml cud-customs-api.yaml $TOMCAT_DIR/webapps/api-explorer/definitions/
+RUN sed -i 's/{url: "definitions\/alfresco-scim-v2.yaml",  name: "SCIM 2.0 API"}/{url: "definitions\/alfresco-scim-v2.yaml",  name: "SCIM 2.0 API"},/' $TOMCAT_DIR/webapps/api-explorer/index.html && \
+    sed -i '/SCIM 2.0 API"},/a\        {url: "definitions/cud-customs-api.yaml",    name: "CUD Customs API"},'   $TOMCAT_DIR/webapps/api-explorer/index.html && \
+    sed -i '/CUD Customs API"},/a\        {url: "definitions/hellouniverse-api.yaml",  name: "HelloUniverse API"},' $TOMCAT_DIR/webapps/api-explorer/index.html
+```
 
 ---
 
@@ -287,8 +316,8 @@ The **CUD Customs** collection in the api-explorer documents the seed endpoint �
 ```json
 {
   "error": "Missing required column: email",
-  "expected_columns": ["firstName", "lastName", "email", "password"],
-  "found_columns": ["firstName", "lastName", "password"]
+  "expected_columns": ["firstname", "lastname", "email", "password"],
+  "found_columns": ["firstname", "lastname", "password"]
 }
 ```
 
@@ -325,53 +354,42 @@ curl -s -u admin:admin "http://localhost:8080/alfresco/service/index/uri/custom/
 
 ## 6. Troubleshooting
 
-### 6.1 "Bundled seed file not found"
+### 6.1 "Bundled seed file not found in package"
 
-**Cause:** The `alfresco_seed_data.xlsx` file is missing from the Java package directory or was excluded by the compiler.
+**Cause:** The `alfresco_seed_data.xlsx` file is missing from the classpath at the expected package path (`ae/ac/cud/customs/`).
 
 **Fix:** Verify the file exists at:
 ```
-aio-platform/src/main/java/ae/ac/cud/customs/alfresco_seed_data.xlsx
+aio-platform/src/main/resources/ae/ac/cud/customs/alfresco_seed_data.xlsx
 ```
-and rebuild with `mvn clean package -DskipTests`.
+and rebuild with `mvn clean package -DskipTests`. Also verify that `pom.xml` has the `combine.self="override"` resource blocks with the `.xlsx` exclusion (see Section 3.4.3).
 
-### 6.1a "unsupported file type: UNKNOWN"
+### 6.2 "unsupported file type: UNKNOWN"
 
-**Cause:** The `.xlsx` file was corrupted by Maven resource filtering (property substitution on binary ZIP bytes).
+**Cause:** The `.xlsx` file was corrupted by Maven resource filtering — `${property}` substitution has overwritten binary ZIP bytes.
 
-**Fix:** Ensure the file lives in `src/main/java/` (the compiler copies it without filtering), not in `src/main/resources/`. The `UserSeedPost` class uses `getClass().getResourceAsStream()` (class-relative resolution) which loads from the package directory. If for any reason the file must stay in `src/main/resources/`, add this to `aio-platform/pom.xml`:
+**Root cause:** Either:
+- The `pom.xml` is missing the `combine.self="override"` resource blocks that exclude `.xlsx` from filtering, or
+- The `combine.self="override"` is present but the parent POM's resource configuration is not properly overridden (e.g., the attribute is on the wrong element)
 
-```xml
-<build>
-    <resources combine.self="override">
-        <resource>
-            <directory>src/main/resources</directory>
-            <filtering>true</filtering>
-            <excludes><exclude>**/*.xlsx</exclude></excludes>
-        </resource>
-        <resource>
-            <directory>src/main/resources</directory>
-            <filtering>false</filtering>
-            <includes><include>**/*.xlsx</include></includes>
-        </resource>
-    </resources>
-</build>
-```
+**Fix:** Ensure `aio-platform/pom.xml` contains the resource configuration shown in Section 3.4.3 with `combine.self="override"` on the `<resources>` element. This creates two resource blocks:
+1. One that filters everything **except** `.xlsx` (filtering = true, excludes = `**/*.xlsx`)
+2. One that handles only `.xlsx` with filtering disabled (filtering = false, includes = `**/*.xlsx`)
 
-The `combine.self="override"` attribute is critical — without it, Maven merges child `<resources>` with the parent's, and the parent's unfiltered block still applies.
+Without `combine.self="override"`, Maven merges child and parent `<resources>` lists, and the parent's unfiltered block may not exclude `.xlsx` files.
 
-### 6.2 "Missing required column"
+### 6.3 "Missing required column"
 
-**Cause:** Excel header row doesn't contain all required columns (firstName, lastName, email, password).
+**Cause:** Excel header row doesn't contain all required columns: `firstName`, `lastName`, `email`, `password`.
 
 **Fix:** 
-- Column names are case-insensitive but must match exactly (e.g., `firstname`, `FirstName`, and `FIRSTNAME` all work)
-- Spaces in headers are NOT trimmed — use exactly `firstName`, not `first name`
+- Column names are case-insensitive and whitespace-trimmed (e.g., `firstName`, `FirstName`, and `FIRSTNAME` all work)
 - Check the response's `found_columns` field to see what was detected
+- If a column like `email` is present but empty at runtime, ensure the header cell actually contains text (not a formula evaluating to blank)
 
-### 6.3 Users not being created
+### 6.4 Users not being created
 
-**Cause:** The `admin` user may not have the correct permissions, or `PersonService` / `AuthenticationService` beans may not be available.
+**Cause:** The authenticated user may not have the correct permissions, or `PersonService` / `AuthenticationService` beans may not be available.
 
 **Fix:** Check ACS logs:
 ```bash
