@@ -1,27 +1,21 @@
 /**
- * AIO Platform — User Seed (Batch Registration)
+ * AIO Platform — Group Seed (Batch Registration)
  * ==============================================
- * File: aio-platform/src/main/java/ae/ac/cud/customs/UserSeedPost.java
- * Role: POST /custom/seed-users — reads bundled Excel file from classpath,
- *       creates Person + Authentication entries (no external file required)
+ * File: aio-platform/src/main/java/ae/ac/cud/customs/GroupSeedPost.java
+ * Role: POST /custom/seed-groups — reads bundled Excel file from classpath,
+ *       creates Authority groups (no external file required)
  * Registered in: webscript-context.xml
  */
 package ae.ac.cud.customs;
 
 import java.io.InputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.alfresco.model.ContentModel;
-import org.alfresco.service.cmr.repository.NodeRef;
-import org.alfresco.service.cmr.repository.NodeService;
-import org.alfresco.service.cmr.security.MutableAuthenticationService;
-import org.alfresco.service.cmr.security.PersonService;
-import org.alfresco.service.namespace.NamespaceService;
-import org.alfresco.service.namespace.QName;
+import org.alfresco.service.cmr.security.AuthorityService;
+import org.alfresco.service.cmr.security.AuthorityType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -36,33 +30,29 @@ import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 
-public class UserSeedPost extends DeclarativeWebScript {
+public class GroupSeedPost extends DeclarativeWebScript {
 
-    private static final int MAX_USERS_PER_BATCH = 1000;
+    private static final int MAX_GROUPS_PER_BATCH = 1000;
 
     /**
      * Bundled Excel seed file — lives under src/main/resources at the
      * same package path as this class, so class-relative resolution works.
      * The file is placed at:
-     *   aio-platform/src/main/resources/ae/ac/cud/customs/alfresco_seed_data.xlsx
+     *   aio-platform/src/main/resources/ae/ac/cud/customs/alfresco_seed_groups.xlsx
      * The POM's resource block excludes *.xlsx from filtering (binary-safe).
      *
      * Loaded at runtime with class-relative resolution:
-     *   getClass().getResourceAsStream("alfresco_seed_data.xlsx")
+     *   getClass().getResourceAsStream("alfresco_seed_groups.xlsx")
      * This resolves to:
-     *   ae/ac/cud/customs/alfresco_seed_data.xlsx  on the classpath
+     *   ae/ac/cud/customs/alfresco_seed_groups.xlsx  on the classpath
      */
-    private static final String SEED_FILENAME = "alfresco_seed_user_data.xlsx";
+    private static final String SEED_FILENAME = "alfresco_seed_group_data.xlsx";
 
-    private NodeService nodeService;
-    private PersonService personService;
-    private MutableAuthenticationService authenticationService;
-    private NamespaceService namespaceService;
+    private AuthorityService authorityService;
 
-    public void setNodeService(NodeService nodeService) { this.nodeService = nodeService; }
-    public void setPersonService(PersonService personService) { this.personService = personService; }
-    public void setAuthenticationService(MutableAuthenticationService auth) { this.authenticationService = auth; }
-    public void setNamespaceService(NamespaceService ns) { this.namespaceService = ns; }
+    public void setAuthorityService(AuthorityService authorityService) {
+        this.authorityService = authorityService;
+    }
 
     @Override
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
@@ -73,7 +63,7 @@ public class UserSeedPost extends DeclarativeWebScript {
 
         try {
             // Load the bundled Excel file from classpath (class-relative —
-            // resolves next to UserSeedPost.class in the same package,
+            // resolves next to GroupSeedPost.class in the same package,
             // immune to Maven resource filtering)
             InputStream is = getClass().getResourceAsStream(SEED_FILENAME);
             if (is == null) {
@@ -109,7 +99,7 @@ public class UserSeedPost extends DeclarativeWebScript {
             }
 
             Map<String, Integer> colMap = buildColumnMap(headerRow);
-            String[] required = {"firstname", "lastname", "email", "password"};
+            String[] required = {"groupid", "displayname"};
             for (String reqCol : required) {
                 if (!colMap.containsKey(reqCol)) {
                     status.setCode(Status.STATUS_BAD_REQUEST);
@@ -124,49 +114,62 @@ public class UserSeedPost extends DeclarativeWebScript {
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 totalRows++;
-                if (totalRows > MAX_USERS_PER_BATCH) {
-                    result.put("warning", "Reached batch limit of " + MAX_USERS_PER_BATCH + ". Remaining rows skipped.");
+                if (totalRows > MAX_GROUPS_PER_BATCH) {
+                    result.put("warning", "Reached batch limit of " + MAX_GROUPS_PER_BATCH + ". Remaining rows skipped.");
                     break;
                 }
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
                 try {
-                    SeedUser user = extractUser(row, colMap);
-                    if (user == null || StringUtils.isBlank(user.email) || StringUtils.isBlank(user.firstName)) {
+                    SeedGroup group = extractGroup(row, colMap);
+                    if (group == null || StringUtils.isBlank(group.groupId) || StringUtils.isBlank(group.displayName)) {
                         skipped++;
                         results.add(skipEntry(i + 1, "Missing required fields"));
                         continue;
                     }
-                    if (authenticationService.authenticationExists(user.email)) {
+
+                    // Normalize groupId: auto-prefix with GROUP_ if not already
+                    String authorityName = group.groupId.trim();
+                    if (!authorityName.toUpperCase().startsWith("GROUP_")) {
+                        authorityName = "GROUP_" + authorityName;
+                    }
+
+                    if (authorityService.authorityExists(authorityName)) {
                         skipped++;
-                        JSONObject s = skipEntry(i + 1, "User already exists");
-                        s.put("username", user.email);
+                        JSONObject s = skipEntry(i + 1, "Group already exists");
+                        s.put("authorityName", authorityName);
                         results.add(s);
                         continue;
                     }
 
-                    Map<QName, Serializable> props = new HashMap<>();
-                    props.put(ContentModel.PROP_USERNAME, user.email);
-                    props.put(ContentModel.PROP_FIRSTNAME, user.firstName);
-                    props.put(ContentModel.PROP_LASTNAME, user.lastName != null ? user.lastName : "");
-                    props.put(ContentModel.PROP_EMAIL, user.email);
-                    if (StringUtils.isNotBlank(user.organization)) props.put(ContentModel.PROP_ORGANIZATION, user.organization);
-                    if (StringUtils.isNotBlank(user.jobTitle)) props.put(ContentModel.PROP_JOBTITLE, user.jobTitle);
-                    if (StringUtils.isNotBlank(user.location)) props.put(ContentModel.PROP_LOCATION, user.location);
-                    if (StringUtils.isNotBlank(user.telephone)) props.put(ContentModel.PROP_TELEPHONE, user.telephone);
-                    props.put(ContentModel.PROP_SIZE_CURRENT, 0);
-                    props.put(ContentModel.PROP_SIZE_QUOTA, -1L);
+                    // Create the group
+                    authorityService.createAuthority(AuthorityType.GROUP, authorityName, group.displayName.trim(), null);
 
-                    NodeRef personRef = personService.createPerson(props);
-                    authenticationService.createAuthentication(user.email, user.password.toCharArray());
-                    authenticationService.setAuthenticationEnabled(user.email, true);
+                    // Handle parent group if specified
+                    String parentName = null;
+                    if (StringUtils.isNotBlank(group.parentGroup)) {
+                        parentName = group.parentGroup.trim();
+                        if (!parentName.toUpperCase().startsWith("GROUP_")) {
+                            parentName = "GROUP_" + parentName;
+                        }
+                        if (authorityService.authorityExists(parentName)) {
+                            authorityService.addAuthority(parentName, authorityName);
+                        } else {
+                            // Parent doesn't exist yet — create it first, then link
+                            authorityService.createAuthority(AuthorityType.GROUP, parentName, parentName, null);
+                            authorityService.addAuthority(parentName, authorityName);
+                        }
+                    }
 
                     JSONObject ok = new JSONObject();
                     ok.put("row", i + 1);
                     ok.put("status", "created");
-                    ok.put("username", user.email);
-                    ok.put("nodeRef", personRef.toString());
+                    ok.put("authorityName", authorityName);
+                    ok.put("displayName", group.displayName.trim());
+                    if (parentName != null) {
+                        ok.put("parentGroup", parentName);
+                    }
                     results.add(ok);
                     created++;
 
@@ -192,7 +195,7 @@ public class UserSeedPost extends DeclarativeWebScript {
         result.put("created", created);
         result.put("skipped", skipped);
         result.put("errors", errors);
-        result.put("users", new JSONArray(results.toString()));
+        result.put("groups", new JSONArray(results.toString()));
         model.put("result", result.toString(2));
         return model;
     }
@@ -211,17 +214,12 @@ public class UserSeedPost extends DeclarativeWebScript {
         return map;
     }
 
-    private SeedUser extractUser(Row row, Map<String, Integer> colMap) {
-        SeedUser u = new SeedUser();
-        u.email = getValue(row, colMap, "email");
-        u.firstName = getValue(row, colMap, "firstname");
-        u.lastName = getValue(row, colMap, "lastname");
-        u.password = getValue(row, colMap, "password");
-        u.organization = getValue(row, colMap, "organization");
-        u.jobTitle = getValue(row, colMap, "jobtitle");
-        u.location = getValue(row, colMap, "location");
-        u.telephone = getValue(row, colMap, "telephone");
-        return u;
+    private SeedGroup extractGroup(Row row, Map<String, Integer> colMap) {
+        SeedGroup g = new SeedGroup();
+        g.groupId = getValue(row, colMap, "groupid");
+        g.displayName = getValue(row, colMap, "displayname");
+        g.parentGroup = getValue(row, colMap, "parentgroup");
+        return g;
     }
 
     private String getValue(Row row, Map<String, Integer> colMap, String key) {
@@ -259,7 +257,7 @@ public class UserSeedPost extends DeclarativeWebScript {
 
     // ============== Data Class ==============
 
-    private static class SeedUser {
-        String email, firstName, lastName, password, organization, jobTitle, location, telephone;
+    private static class SeedGroup {
+        String groupId, displayName, parentGroup;
     }
 }

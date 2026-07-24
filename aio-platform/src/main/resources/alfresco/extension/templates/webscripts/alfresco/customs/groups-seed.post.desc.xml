@@ -1,0 +1,8 @@
+<webscript>
+    <shortname>Batch Seed Groups from bundled Excel</shortname>
+    <description>POST /custom/seed-groups — reads bundled Excel file (alfresco_seed_groups.xlsx) from classpath and creates Authority groups. Column: groupId, displayName (required), parentGroup (optional). Safe to run multiple times — existing groups are skipped.</description>
+    <url>/custom/seed-groups</url>
+    <format default="json">argument</format>
+    <authentication>user</authentication>
+    <transaction>required</transaction>
+</webscript>

@@ -69,4 +69,16 @@
         <property name="namespaceService" ref="NamespaceService" />
     </bean>
 
+    <!-- ============================================================
+          CUD Customs — Group Seed API
+          ============================================================
+          POST /custom/seed-groups — reads bundled Excel from classpath
+          for batch group registration (no external file upload required)
+          ============================================================ -->
+
+    <bean id="webscript.alfresco.customs.groups-seed.post"
+          class="ae.ac.cud.customs.GroupSeedPost">
+        <property name="authorityService" ref="AuthorityService" />
+    </bean>
+
 </beans>

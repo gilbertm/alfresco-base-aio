@@ -19,6 +19,22 @@ info:
     ```
 
     The endpoint creates Person + Authentication entries for each row. Existing users (by email) are skipped.
+
+    ## Group Seeding (Batch Registration)
+    Send a POST request to batch-register groups from the bundled seed file
+    (`alfresco_seed_groups.xlsx` shipped inside the AMP). No external file upload is required.
+
+    **Required columns:** groupId, displayName
+    **Optional columns:** parentGroup
+
+    **Usage:** Simply POST to the endpoint — the seed data is read from the classpath:
+    ```
+    curl -u admin:admin -X POST \
+      "http://localhost:8080/alfresco/service/custom/seed-groups"
+    ```
+
+    The endpoint creates Authority groups for each row. Existing groups (by authority name) are skipped.
+    Parent groups are auto-created if specified and not already present.
   version: '1'
   title: CUD Customs API
 basePath: /alfresco/service
@@ -33,6 +49,8 @@ produces:
 tags:
   - name: user-seeding
     description: Batch user registration from Excel files
+  - name: group-seeding
+    description: Batch group registration from Excel files
 paths:
   /custom/seed-users:
     post:
@@ -62,6 +80,37 @@ paths:
           description: Missing required columns or empty file
         '401':
           description: Authentication required
+
+  /custom/seed-groups:
+    post:
+      tags:
+        - group-seeding
+      summary: Batch register groups from bundled Excel seed file
+      description: >
+        Triggers batch group registration using the bundled Excel seed file
+        (`alfresco_seed_groups.xlsx`) shipped inside the AMP. No file upload needed.
+
+        **Required columns:** groupId, displayName
+
+        **Optional columns:** parentGroup
+
+        The endpoint creates Authority groups for each row.
+        Existing groups (matched by authority name) are skipped.
+        Parent groups are auto-created if specified and not already present.
+      operationId: seedGroups
+      security:
+        - basicAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Processing completed
+          schema:
+            $ref: '#/definitions/SeedGroupResponse'
+        '400':
+          description: Missing required columns or empty file
+        '401':
+          description: Authentication required
+
 definitions:
   SeedUserEntry:
     type: object
@@ -92,3 +141,37 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/SeedUserEntry'
+
+  SeedGroupEntry:
+    type: object
+    properties:
+      row:
+        type: integer
+      status:
+        type: string
+        enum: [created, skipped, error]
+      authorityName:
+        type: string
+        description: Full authority name (e.g., GROUP_Faculty)
+      displayName:
+        type: string
+      parentGroup:
+        type: string
+        description: Parent group authority name (if applicable)
+      reason:
+        type: string
+  SeedGroupResponse:
+    type: object
+    properties:
+      total_rows:
+        type: integer
+      created:
+        type: integer
+      skipped:
+        type: integer
+      errors:
+        type: integer
+      groups:
+        type: array
+        items:
+          $ref: '#/definitions/SeedGroupEntry'
