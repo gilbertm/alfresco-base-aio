@@ -10,6 +10,7 @@ package ae.ac.cud.customs;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,8 +144,10 @@ public class GroupSeedPost extends DeclarativeWebScript {
                         continue;
                     }
 
-                    // Create the group
-                    authorityService.createAuthority(AuthorityType.GROUP, authorityName, group.displayName.trim(), null);
+                    // Create the group with APP.DEFAULT zone so it appears as a
+                    // regular group (not a system group) in the Share admin UI
+                    authorityService.createAuthority(AuthorityType.GROUP, authorityName,
+                            group.displayName.trim(), Collections.singleton("APP.DEFAULT"));
 
                     // Handle parent group if specified
                     String parentName = null;
@@ -157,7 +160,8 @@ public class GroupSeedPost extends DeclarativeWebScript {
                             authorityService.addAuthority(parentName, authorityName);
                         } else {
                             // Parent doesn't exist yet — create it first, then link
-                            authorityService.createAuthority(AuthorityType.GROUP, parentName, parentName, null);
+                            authorityService.createAuthority(AuthorityType.GROUP, parentName,
+                                    parentName, Collections.singleton("APP.DEFAULT"));
                             authorityService.addAuthority(parentName, authorityName);
                         }
                     }
