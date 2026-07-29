@@ -84,4 +84,10 @@
 </@>
 <@markup id="resources">
    <#-- Use this "markup id" to add in a extension's resources -->
+   <#if theme = 'CUDCustomTheme' && user.name != "admin">
+      <style type="text/css">
+         #HEADER_SITES_MENU { display: none !important; }
+         #HEADER_REPOSITORY { display: none !important; }
+      </style>
+   </#if>
 </@>
