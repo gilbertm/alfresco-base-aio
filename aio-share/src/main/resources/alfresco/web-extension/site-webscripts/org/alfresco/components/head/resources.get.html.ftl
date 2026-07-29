@@ -83,5 +83,5 @@
    <@link rel="stylesheet" type="text/css" href="${url.context}/${sitedata.getDojoPackageLocation('dijit')}/themes/claro/claro.css" group="share" forceAggregation="true"/>
 </@>
 <@markup id="resources">
-   <script type="text/javascript">//<![CDATA[YAHOO.util.Event.onDOMReady(function(){var t="${msg(theme + '.title')!msg('page.title.default')}";if(t&&t!=="page.title.default"){document.title=t;}});//]]></script>
+   <#-- Use this "markup id" to add in a extension's resources -->
 </@>
