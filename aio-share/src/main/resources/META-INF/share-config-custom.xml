@@ -16,12 +16,29 @@
         (will be merged with out-of-the-box configured types and aspects)
     =============================================================================================================-->
 
-    <!-- Configure people and group search to show all results without requiring minimum characters -->
+<!-- Full replacement of the Search section so all required children are present -->
     <config evaluator="string-compare" condition="Search" replace="true">
         <search>
+            <!-- Allow empty search term (show all) -->
             <min-search-term-length>0</min-search-term-length>
+
+            <!-- General repository search limit -->
             <max-search-results>100</max-search-results>
+
+            <!-- CRITICAL: this must be present, otherwise pageSize error occurs -->
+            <max-users-search-results>100</max-users-search-results>
+
+            <!-- Keep the original defaults for the rest -->
+            <repository-search>always-options</repository-search>
+            <display-facets>true</display-facets>
         </search>
+    </config>
+
+    <!-- Groups / Admin Console page size (separate section) -->
+    <config evaluator="string-compare" condition="Console">
+        <groups>
+            <max-page-size>100</max-page-size>
+        </groups>
     </config>
 
 
