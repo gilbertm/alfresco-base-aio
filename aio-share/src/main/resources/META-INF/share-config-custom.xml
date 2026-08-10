@@ -16,7 +16,7 @@
         (will be merged with out-of-the-box configured types and aspects)
     =============================================================================================================-->
 
-<!-- Full replacement of the Search section so all required children are present -->
+    <!-- Full replacement of the Search section so all required children are present -->
     <config evaluator="string-compare" condition="Search" replace="true">
         <search>
             <!-- Allow empty search term (show all) -->
@@ -483,6 +483,17 @@
     </config>
 
     <!-- Advanced Workflow: Start form for acmewadv:advanceReviewStart -->
+    <!-- Register aio-share-debug Dojo package for Aikau service module resolution -->
+    <config evaluator="string-compare" condition="WebFramework" replace="false">
+        <web-framework>
+            <dojo-pages>
+                <packages>
+                    <package name="aio-share-debug" location="resources/aio-share/js"/>
+                </packages>
+            </dojo-pages>
+        </web-framework>
+    </config>
+
     <config evaluator="string-compare" condition="acmewadv:advanceReviewStart">
         <forms>
             <form>

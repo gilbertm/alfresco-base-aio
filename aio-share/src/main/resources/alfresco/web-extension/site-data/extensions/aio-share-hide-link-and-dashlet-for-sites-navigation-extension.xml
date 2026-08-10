@@ -1,0 +1,64 @@
+<extension>
+   <modules>
+      <!-- Module that applies only when the current user is NOT an admin -->
+      <module>
+         <id>AIOS - Hide My Sites for non-admins</id>
+         <version>1.0</version>
+         <auto-deploy>true</auto-deploy>
+
+         <!-- Official group.module.evaluator – negate so it runs for non-admins -->
+         <evaluator type="group.module.evaluator">
+            <params>
+               <groups>GROUP_ALFRESCO_ADMINISTRATORS</groups>
+               <negate>true</negate>
+            </params>
+         </evaluator>
+
+         <!-- Aikau header customization (navigation item) -->
+         <customizations>
+            <customization>
+               <targetPackageRoot>org.alfresco.share.header</targetPackageRoot>
+               <sourcePackageRoot>ae.ac.cud.header</sourcePackageRoot>
+            </customization>
+            <!-- Classic dashlet controllers (My Sites dashlet + related) -->
+            <customization>
+               <targetPackageRoot>org.alfresco.components.dashlets</targetPackageRoot>
+               <sourcePackageRoot>ae.ac.cud.dashlets</sourcePackageRoot>
+            </customization>
+         </customizations>
+
+         <!-- Hide the My Sites dashlet on user dashboard -->
+         <components>
+            <component>
+               <region-id>component-1-1</region-id>          
+               <source-id>user/{userid}/dashboard</source-id>
+               <scope>page</scope>
+               <sub-components>
+                  <sub-component id="default">
+                     <evaluations>
+                        <evaluation id="hide-my-sites-dashlet">
+                           <render>false</render>
+                        </evaluation>
+                     </evaluations>
+                  </sub-component>
+               </sub-components>
+            </component>
+            <!-- Optional: hide any other known “sites” related blocks on user dashboard -->
+            <!-- component>
+               <region-id>component-2-1</region-id>
+               <source-id>user/{userid}/dashboard</source-id>
+               <scope>page</scope>
+               <sub-components>
+                  <sub-component id="default">
+                     <evaluations>
+                        <evaluation id="hide-related-sites-block">
+                           <render>false</render>
+                        </evaluation>
+                     </evaluations>
+                  </sub-component>
+               </sub-components>
+            </component -->
+         </components>
+      </module>
+    </modules>
+</extension>
