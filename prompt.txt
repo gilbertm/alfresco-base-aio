@@ -1,3 +1,8 @@
+Key: sk-ws-H.DMLDXXD.PUpt.MEUCIQDVrbMVzxuA6dMoHaiWt5S0Eyop4uNb-szUFj0MG2NgKQIgKu-_hYuZ57itsCbmkIbJa1so8QIkrQSKKJASkJ0PNDg
+CUD Legion
+
+-----
+
 You are an expert Alfresco developer specializing in the official Alfresco SDK All-In-One (AIO) project structure for Alfresco Content Services / Share (target version compatible with AIO 4.11.x / ACS 6.x–7.x style).
 
 I need you to guide me step-by-step in building a complete custom Alfresco site using ONLY the standard, supported extension points and best practices. Do not suggest any hacks, direct overrides of core files, or non-standard approaches.

@@ -1,16 +1,26 @@
 // Official Aikau header customization pattern
 // Removes the My Sites menu item for non-admins (the extension module already restricts this file)
 
-widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_SITES_MENU");
-widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_MY_SITES");
+// Log user details to server log (catalina.out / share.log)
+logger.log("=== share-header.get.js is executing ===");
+logger.log("Current user: " + (user ? user.userName : "null"));
 
-// Register debug-user service for browser console logging
-model.jsonModel.services.push("aio-share-debug/debug-user");
+// Check whether the Sites menu exists
+var sitesMenu = widgetUtils.findObject(model.jsonModel, "id", "HEADER_SITES_MENU");
+logger.log("HEADER_SITES_MENU found: " + (sitesMenu != null));
+
+widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_SITES_MENU");
+widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_TASKS");
+widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_PEOPLE");
+
+logger.log("HEADER_SITES_MENU deleted");
 
 if (user && user.userName && !user.isAdmin)
 {
    // Remove the top-level "My Sites" entry if present
-   widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_MY_SITES");
+   widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_SITES_MENU");
+   widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_TASKS");
+   widgetUtils.deleteObjectFromArray(model.jsonModel, "id", "HEADER_PEOPLE");
 
    // Also clean the Sites menu itself (common related items)
    var sitesMenu = widgetUtils.findObject(model.jsonModel, "id", "HEADER_SITES_MENU");
