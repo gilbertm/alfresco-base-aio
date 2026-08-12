@@ -41,14 +41,5 @@
      <bean id="reviewAssignmentDelegate"
            class="ae.ac.cud.workflow.advance.ReviewAssignmentDelegate" />
 
-    <!-- University Service Implementation -->
-    <bean id="universityService" class="ae.ac.cud.university.impl.UniversityServiceImpl">
-        <constructor-arg index="0" ref="ServiceRegistry"/>
-    </bean>
-
-    <!-- University Controller -->
-    <bean id="webscript.org.alfresco.api.university" class="ae.ac.cud.university.controller.UniversityController">
-        <constructor-arg index="0" ref="universityService"/>
-    </bean>
 
 </beans>

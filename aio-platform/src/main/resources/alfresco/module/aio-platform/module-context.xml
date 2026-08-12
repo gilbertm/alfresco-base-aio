@@ -29,26 +29,4 @@
     <import resource="classpath:alfresco/module/${project.artifactId}/context/service-context.xml" />
 	<import resource="classpath:alfresco/module/${project.artifactId}/context/webscript-context.xml" />
 
-	<!-- University folder structure bootstrapper.
-	     Placed directly in module-context.xml so the ModuleComponent scanner
-	     discovers it reliably (beans in imported files may be missed in ACS 26.x). -->
-	<bean id="university.folderBootstrap"
-	      class="org.alfresco.repo.module.ImporterModuleComponent"
-	      parent="module.baseComponent"
-	      depends-on="aio-platform.dictionaryBootstrap">
-		<property name="moduleId" value="${project.artifactId}"/>
-		<property name="name" value="universityFolderStructure"/>
-		<property name="description" value="Creates University/President folder hierarchy with correct ACLs"/>
-		<property name="sinceVersion" value="1.0"/>
-		<property name="appliesFromVersion" value="1.0"/>
-		<property name="bootstrapViews">
-			<list>
-				<props>
-					<prop key="path">/${spaces.company_home.childname}</prop>
-					<prop key="location">alfresco/module/${project.artifactId}/bootstrap/university-folder-structure.xml</prop>
-				</props>
-			</list>
-		</property>
-	</bean>
-
 </beans>
