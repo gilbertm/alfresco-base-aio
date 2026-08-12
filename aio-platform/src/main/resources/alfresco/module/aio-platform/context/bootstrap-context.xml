@@ -2,7 +2,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-          http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <!-- The bootstrap-context.xml file is used for patch definitions, importers, 
 		 workflow, and loading custom content models.  -->
@@ -51,6 +51,43 @@
                 <value>alfresco/module/${project.artifactId}/messages/review-workflow-messages</value>
                 <value>alfresco/module/${project.artifactId}/messages/advance-workflow-messages</value>
             </list>
+        </property>
+    </bean>
+
+    <!-- Force bootstrap of CUD Document Management space template -->
+    <bean id="patch.cudDocumentManagementSpaceTemplate"
+          class="org.alfresco.repo.admin.patch.impl.GenericBootstrapPatch"
+          parent="basePatch">
+
+        <property name="id">
+            <value>patch.cudDocumentManagementSpaceTemplate</value>
+        </property>
+        <property name="description">
+            <value>patch.cudDocumentManagementSpaceTemplate.description</value>
+        </property>
+        <property name="fixesFromSchema">
+            <value>0</value>
+        </property>
+        <property name="fixesToSchema">
+            <value>${version.schema}</value>
+        </property>
+        <property name="targetSchema">
+            <value>100000</value>
+        </property>
+
+        <!-- Force it to run even if it already ran -->
+        <property name="force" value="true"/>
+
+        <property name="importerBootstrap">
+            <ref bean="spacesBootstrap"/>
+        </property>
+
+        <property name="bootstrapView">
+            <props>
+                <prop key="path">/${spaces.company_home.childname}/${spaces.dictionary.childname}/${spaces.templates.childname}</prop>
+                <prop key="location">alfresco/module/${project.artifactId}/bootstrap/cud-document-management-space-template.xml</prop>
+                <prop key="encoding">UTF-8</prop>
+            </props>
         </property>
     </bean>
 </beans>

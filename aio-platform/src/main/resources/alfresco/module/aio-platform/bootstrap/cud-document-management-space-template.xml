@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view:view xmlns:view="http://www.alfresco.org/view/repository/1.0"
+           xmlns:cm="http://www.alfresco.org/model/content/1.0"
+           xmlns:app="http://www.alfresco.org/model/application/1.0">
+
+   <cm:folder view:childName="cm:CUD Document Management">
+      <app:uifacets/>
+      <cm:name>CUD Document Management</cm:name>
+      <cm:title>CUD Document Management</cm:title>
+      <cm:description>Space template similar to Software Engineering Project</cm:description>
+      <app:icon>space-icon-default</app:icon>
+
+      <cm:contains>
+
+         <!-- Documentation -->
+         <cm:folder view:childName="cm:Documentation">
+            <app:uifacets/>
+            <cm:name>Documentation</cm:name>
+            <app:icon>space-icon-default</app:icon>
+            <cm:contains>
+               <cm:folder view:childName="cm:Drafts">
+                  <app:uifacets/>
+                  <cm:name>Drafts</cm:name>
+                  <app:icon>space-icon-default</app:icon>
+               </cm:folder>
+               <cm:folder view:childName="cm:Pending Approval">
+                  <app:uifacets/>
+                  <cm:name>Pending Approval</cm:name>
+                  <app:icon>space-icon-default</app:icon>
+               </cm:folder>
+               <cm:folder view:childName="cm:Published">
+                  <app:uifacets/>
+                  <cm:name>Published</cm:name>
+                  <app:icon>space-icon-default</app:icon>
+               </cm:folder>
+               <cm:folder view:childName="cm:Samples">
+                  <app:uifacets/>
+                  <cm:name>Samples</cm:name>
+                  <app:icon>space-icon-doc</app:icon>
+               </cm:folder>
+            </cm:contains>
+         </cm:folder>
+
+         <!-- Discussions -->
+         <cm:folder view:childName="cm:Discussions">
+            <app:uifacets/>
+            <cm:name>Discussions</cm:name>
+            <app:icon>space-icon-default</app:icon>
+         </cm:folder>
+
+         <!-- UI Design -->
+         <cm:folder view:childName="cm:UI Design">
+            <app:uifacets/>
+            <cm:name>UI Design</cm:name>
+            <app:icon>space-icon-default</app:icon>
+         </cm:folder>
+
+         <!-- Presentations -->
+         <cm:folder view:childName="cm:Presentations">
+            <app:uifacets/>
+            <cm:name>Presentations</cm:name>
+            <app:icon>space-icon-default</app:icon>
+         </cm:folder>
+
+         <!-- Quality Assurance -->
+         <cm:folder view:childName="cm:Quality Assurance">
+            <app:uifacets/>
+            <cm:name>Quality Assurance</cm:name>
+            <app:icon>space-icon-default</app:icon>
+         </cm:folder>
+
+      </cm:contains>
+   </cm:folder>
+
+</view:view>
