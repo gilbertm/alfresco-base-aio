@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Force bootstrap of CUD Document Management space template -->
+    <bean id="patch.cudDocumentManagementSystemSpaceTemplate"
+          class="org.alfresco.repo.admin.patch.impl.GenericBootstrapPatch"
+          parent="basePatch">
+
+        <property name="id">
+            <value>patch.cudDocumentManagementSystemSpaceTemplate</value>
+        </property>
+        <property name="description">
+            <value>patch.cudDocumentManagementSystemSpaceTemplate.description</value>
+        </property>
+        <property name="fixesFromSchema">
+            <value>0</value>
+        </property>
+        <property name="fixesToSchema">
+            <value>${version.schema}</value>
+        </property>
+        <property name="targetSchema">
+            <value>100000</value>
+        </property>
+
+        <!-- Force it to run even if it already ran -->
+        <property name="force" value="true"/>
+
+        <property name="importerBootstrap">
+            <ref bean="spacesBootstrap"/>
+        </property>
+
+        <property name="bootstrapView">
+            <props>
+                <prop key="path">/${spaces.company_home.childname}/${spaces.dictionary.childname}/${spaces.templates.childname}</prop>
+                <prop key="location">alfresco/module/cud-document-management-system/bootstrap/cud-document-management-system-space-template.xml</prop>
+                <prop key="encoding">UTF-8</prop>
+            </props>
+        </property>
+    </bean>
+</beans>

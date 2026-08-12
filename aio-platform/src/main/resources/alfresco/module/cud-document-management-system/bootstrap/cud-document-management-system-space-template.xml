@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view:view xmlns:view="http://www.alfresco.org/view/repository/1.0"
+           xmlns:cm="http://www.alfresco.org/model/content/1.0"
+           xmlns:app="http://www.alfresco.org/model/application/1.0">
+
+   <cm:folder view:childName="cm:CUD Document Management System">
+      <app:uifacets/>
+      <cm:name>CUD Document Management System</cm:name>
+      <cm:title>CUD Document Management System</cm:title>
+      <cm:description>Space template similar to Software Engineering Project System</cm:description>
+      <app:icon>space-icon-default</app:icon>
+
+   </cm:folder>
+
+</view:view>
