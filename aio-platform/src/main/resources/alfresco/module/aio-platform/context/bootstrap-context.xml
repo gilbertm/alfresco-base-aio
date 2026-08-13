@@ -53,41 +53,4 @@
             </list>
         </property>
     </bean>
-
-    <!-- Force bootstrap of CUD Document Management space template -->
-    <bean id="patch.cudDocumentManagementSpaceTemplate"
-          class="org.alfresco.repo.admin.patch.impl.GenericBootstrapPatch"
-          parent="basePatch">
-
-        <property name="id">
-            <value>patch.cudDocumentManagementSpaceTemplate</value>
-        </property>
-        <property name="description">
-            <value>patch.cudDocumentManagementSpaceTemplate.description</value>
-        </property>
-        <property name="fixesFromSchema">
-            <value>0</value>
-        </property>
-        <property name="fixesToSchema">
-            <value>${version.schema}</value>
-        </property>
-        <property name="targetSchema">
-            <value>100000</value>
-        </property>
-
-        <!-- Force it to run even if it already ran -->
-        <property name="force" value="true"/>
-
-        <property name="importerBootstrap">
-            <ref bean="spacesBootstrap"/>
-        </property>
-
-        <property name="bootstrapView">
-            <props>
-                <prop key="path">/${spaces.company_home.childname}/${spaces.dictionary.childname}/${spaces.templates.childname}</prop>
-                <prop key="location">alfresco/module/${project.artifactId}/bootstrap/cud-document-management-space-template.xml</prop>
-                <prop key="encoding">UTF-8</prop>
-            </props>
-        </property>
-    </bean>
 </beans>
