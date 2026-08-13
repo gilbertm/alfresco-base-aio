@@ -4,35 +4,17 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
                            http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <!-- Force bootstrap of CUD Document Management space template -->
-    <bean id="patch.cudDocumentManagementSystemSpaceTemplate"
-          class="org.alfresco.repo.admin.patch.impl.GenericBootstrapPatch"
-          parent="basePatch">
-
-        <property name="id">
-            <value>patch.cudDocumentManagementSystemSpaceTemplate</value>
-        </property>
-        <property name="description">
-            <value>patch.cudDocumentManagementSystemSpaceTemplate.description</value>
-        </property>
-        <property name="fixesFromSchema">
-            <value>0</value>
-        </property>
-        <property name="fixesToSchema">
-            <value>${version.schema}</value>
-        </property>
-        <property name="targetSchema">
-            <value>100000</value>
-        </property>
-
-        <!-- Force it to run even if it already ran -->
-        <property name="force" value="true"/>
-
-        <property name="importerBootstrap">
-            <ref bean="spacesBootstrap"/>
-        </property>
-
-        <property name="bootstrapView">
+    <!-- 1. Space Template root only -->
+    <bean id="cud.bootstrap.spaceTemplate"
+            class="org.alfresco.repo.module.ImporterModuleComponent"
+            parent="module.baseComponent">
+        <property name="moduleId" value="cud-document-management-system"/>
+        <property name="name" value="CUD Space Template Bootstrap"/>
+        <property name="description" value="Creates CUD Document Management space template root"/>
+        <property name="sinceVersion" value="1.0.0"/>
+        <property name="appliesFromVersion" value="1.0.0"/>
+        <property name="importer" ref="spacesBootstrap"/>
+        <property name="bootstrapViews">
             <props>
                 <prop key="path">/${spaces.company_home.childname}/${spaces.dictionary.childname}/${spaces.templates.childname}</prop>
                 <prop key="location">alfresco/module/cud-document-management-system/bootstrap/cud-document-management-system-space-template.xml</prop>
@@ -40,4 +22,44 @@
             </props>
         </property>
     </bean>
+
+    <!-- 2. Automation script -->
+   <bean id="cud.bootstrap.script"
+         class="org.alfresco.repo.module.ImporterModuleComponent"
+         parent="module.baseComponent"
+         depends-on="cud.bootstrap.spaceTemplate">
+      <property name="moduleId" value="cud-document-management-system"/>
+      <property name="name" value="CUD Auto-Department Script Bootstrap"/>
+      <property name="description" value="Deploys cud-auto-department.js"/>
+      <property name="sinceVersion" value="1.0.0"/>
+      <property name="appliesFromVersion" value="1.0.0"/>
+      <property name="importer" ref="spacesBootstrap"/>
+      <property name="bootstrapViews">
+         <list>
+            <props>
+               <prop key="uuidBinding">UPDATE_EXISTING</prop>
+               <prop key="path">/${spaces.company_home.childname}/${spaces.dictionary.childname}/${spaces.scripts.childname}</prop>
+               <prop key="location">alfresco/module/cud-document-management-system/bootstrap/cud-document-management-system-script-import.xml</prop>
+            </props>
+         </list>
+      </property>
+   </bean>
+
+   <!-- 3. Ensure rule exists on every startup (idempotent) -->
+   <bean id="cud.ensureRule"
+         class="ae.ac.cud.customs.CudEnsureRuleComponent"
+         parent="module.baseComponent"
+         depends-on="cud.bootstrap.script">
+      <property name="moduleId" value="cud-document-management-system"/>
+      <property name="name"              value="CUD Ensure Rule"/>
+      <property name="description"       value="Creates the auto-department rule if missing"/>
+      <property name="sinceVersion"      value="1.0.0"/>
+      <property name="appliesFromVersion" value="1.0.0"/>
+      <property name="executeOnceOnly"   value="false"/>
+
+      <property name="nodeLocatorService" ref="nodeLocatorService"/>
+      <property name="nodeService"        ref="nodeService"/>
+      <property name="ruleService"        ref="ruleService"/>
+      <property name="actionService"      ref="actionService"/>
+   </bean>
 </beans>
