@@ -44,6 +44,7 @@ public class CudEnsureRuleComponent extends AbstractModuleComponent {
 
     @Override
     protected void executeInternal() throws Throwable {
+        logger.info("=== CUD Ensure Rule component starting ===");
         AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<Void>() {
             @Override
             public Void doWork() throws Exception {
@@ -51,6 +52,7 @@ public class CudEnsureRuleComponent extends AbstractModuleComponent {
                 return null;
             }
         }, AuthenticationUtil.getAdminUserName());
+        logger.info("=== CUD Ensure Rule component finished ===");
     }
 
     private void ensureRule() {

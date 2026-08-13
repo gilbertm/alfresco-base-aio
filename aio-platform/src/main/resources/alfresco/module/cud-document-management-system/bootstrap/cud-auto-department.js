@@ -1,5 +1,5 @@
 // cud-auto-department.js
-// Triggered by rule on "CUD Document Management" Space Template root
+// Triggered by rule on "CUD Document Management System" Space Template root
 // when a new Folder is created inside it.
 
 (function () {
@@ -9,7 +9,9 @@
     }
 
     var deptName = document.name;                                 // e.g. "President"
-    var safeName = deptName.replace(/[^a-zA-Z0-9]/g, "_");        // safe group short-name
+    // NOTE: avoid String.replace(RegExp, ...) in Rhino – overload resolution
+    // is ambiguous. Use replaceAll(String regex, String replacement) instead.
+    var safeName = deptName.replaceAll("[^a-zA-Z0-9]", "_");      // safe group short-name
 
     logger.log("=== CUD auto-department starting for: " + deptName + " ===");
 
