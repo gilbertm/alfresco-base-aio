@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model name="cud:model" xmlns="http://www.alfresco.org/model/dictionary/1.0">
+
+   <description>CUD Document Management Model</description>
+   <author>CUD</author>
+   <version>1.0</version>
+
+   <imports>
+      <import uri="http://www.alfresco.org/model/dictionary/1.0" prefix="d"/>
+      <import uri="http://www.alfresco.org/model/content/1.0" prefix="cm"/>
+   </imports>
+
+   <namespaces>
+      <namespace uri="http://www.cud.ac.ae/model/content/1.0" prefix="cud"/>
+   </namespaces>
+
+   <aspects>
+      <!--
+         Place on the CUD space-template root.
+         Any space created from that template keeps the aspect.
+         Behaviour only runs for folders created directly under such a node.
+      -->
+      <aspect name="cud:departmentRoot">
+         <title>CUD Department Root</title>
+         <description>
+            Direct child folders receive Draft/Review/Published/Archive structure,
+            groups and permissions automatically.
+         </description>
+      </aspect>
+   </aspects>
+
+</model>

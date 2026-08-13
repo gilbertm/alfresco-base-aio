@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+   <!-- Space template root with cud:departmentRoot aspect -->
+   <bean id="cud.v2.bootstrap.spaceTemplate"
+         class="org.alfresco.repo.module.ImporterModuleComponent"
+         parent="module.baseComponent">
+      <property name="moduleId" value="cud-document-management-v2"/>
+      <property name="name" value="CUD v2 Space Template Bootstrap"/>
+      <property name="description" value="Creates CUD Document Management space template with departmentRoot aspect"/>
+      <property name="sinceVersion" value="2.0.0"/>
+      <property name="appliesFromVersion" value="2.0.0"/>
+      <property name="importer" ref="spacesBootstrap"/>
+      <property name="bootstrapViews">
+         <list>
+            <props>
+               <prop key="uuidBinding">UPDATE_EXISTING</prop>
+               <prop key="path">/${spaces.company_home.childname}/${spaces.dictionary.childname}/${spaces.templates.childname}</prop>
+               <prop key="location">alfresco/module/cud-document-management-v2/bootstrap/cud-space-template.xml</prop>
+               <prop key="encoding">UTF-8</prop>
+            </props>
+         </list>
+      </property>
+   </bean>
+
+</beans>

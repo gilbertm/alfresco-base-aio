@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view:view xmlns:view="http://www.alfresco.org/view/repository/1.0"
+           xmlns:cm="http://www.alfresco.org/model/content/1.0"
+           xmlns:cud="http://www.cud.ac.ae/model/content/1.0">
+
+   <cm:folder view:childName="cm:CUD_Document_Management_System_V2">
+      <view:aspects>
+         <cm:titled/>
+         <cud:departmentRoot/>
+      </view:aspects>
+      <view:properties>
+         <cm:name>CUD Document Management System V2</cm:name>
+         <cm:title>CUD Document Management System V2</cm:title>
+         <cm:description>
+            Space template. Create a folder from this template, then create
+            department folders underneath – structure and groups are created automatically.
+         </cm:description>
+      </view:properties>
+      <view:associations>
+         <!-- optional: pre-create empty placeholder folders if you want -->
+      </view:associations>
+   </cm:folder>
+
+</view:view>

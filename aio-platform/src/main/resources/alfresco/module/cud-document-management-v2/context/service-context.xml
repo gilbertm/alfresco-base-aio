@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+   <!-- Dictionary model -->
+   <bean id="cud.v2.dictionaryBootstrap"
+         parent="dictionaryModelBootstrap"
+         depends-on="dictionaryBootstrap">
+      <property name="models">
+         <list>
+            <value>alfresco/module/cud-document-management-v2/model/cud-model.xml</value>
+         </list>
+      </property>
+   </bean>
+
+   <!-- OnCreateNode behaviour -->
+   <bean id="cud.v2.autoDepartmentBehaviour"
+         class="ae.ac.cud.customs.CudAutoDepartmentBehaviour"
+         init-method="init"
+         depends-on="cud.v2.dictionaryBootstrap">
+      <property name="policyComponent"   ref="policyComponent"/>
+      <property name="nodeService"       ref="NodeService"/>
+      <property name="fileFolderService" ref="FileFolderService"/>
+      <property name="authorityService"  ref="AuthorityService"/>
+      <property name="permissionService" ref="PermissionService"/>
+   </bean>
+
+</beans>
