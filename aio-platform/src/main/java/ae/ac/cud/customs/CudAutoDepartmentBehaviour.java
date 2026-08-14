@@ -15,6 +15,7 @@ import org.alfresco.service.cmr.model.FileInfo;
 import org.alfresco.service.cmr.repository.ChildAssociationRef;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
+import org.alfresco.service.cmr.security.AccessPermission;
 import org.alfresco.service.cmr.security.AuthorityService;
 import org.alfresco.service.cmr.security.AuthorityType;
 import org.alfresco.service.cmr.security.PermissionService;
@@ -23,13 +24,124 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * OnCreateNode behaviour for cm:folder.
+ * =============================================================================
+ * FILE        : CudAutoDepartmentBehaviour.java
+ * PACKAGE     : ae.ac.cud.customs
+ * CLASS       : CudAutoDepartmentBehaviour
+ * MODULE      : aio-platform (CUD Customs Alfresco Platform AMP)
+ * AUTHOR      : CUD Development Team
+ * CREATED     : 2026-08-14
+ * VERSION     : 1.0
+ * =============================================================================
  *
- * When a folder is created directly under a node that has aspect cud:departmentRoot
- * (CUD space template root or any space created from it), this creates:
- *   - {name}_Draft / _Review / _Published / _Archive
- *   - four groups (Contributors, Reviewers, Managers, Readers)
- *   - permissions matching the original JavaScript rule
+ * SUMMARY
+ * -------
+ * Alfresco repository behaviour (policy) implementing
+ * {@link NodeServicePolicies.OnCreateNodePolicy}. It listens for the creation
+ * of cm:folder nodes and automatically provisions a complete "department"
+ * structure whenever a plain folder is created directly under a node carrying
+ * the custom aspect cud:departmentRoot (applied to the CUD space-template
+ * root and any space created from it). The provisioning replicates the
+ * original JavaScript rule: lifecycle sub-folders, department groups and a
+ * fixed permission matrix.
+ *
+ * POLICY BINDING / TRIGGER
+ * ------------------------
+ * Policy     : NodeServicePolicies.OnCreateNodePolicy.QNAME
+ * Bound to   : ContentModel.TYPE_FOLDER (class binding, registered in init())
+ * Frequency  : Behaviour.NotificationFrequency.TRANSACTION_COMMIT
+ * Conditions : - the new folder's PARENT has aspect cud:departmentRoot
+ *              - the new node's type is exactly cm:folder
+ *              - the folder name is non-empty
+ *              - the name does NOT end with one of the lifecycle suffixes
+ *                (_Draft / _Review / _Published / _Archive), which prevents
+ *                recursive self-triggering
+ * Execution  : provisioning runs as the system user via
+ *              AuthenticationUtil.runAs(...), with errors logged (the
+ *              original folder-creation transaction is not rolled back).
+ *
+ * ARTIFACTS CREATED FOR EACH DEPARTMENT FOLDER "{Dept}"
+ * -----------------------------------------------------
+ * 1. Child folders (cm:title set; cm:versionable aspect added):
+ *      - {Dept}_Draft
+ *      - {Dept}_Review
+ *      - {Dept}_Published
+ *      - {Dept}_Archive
+ *
+ * 2. Alfresco groups (short name sanitized to [a-zA-Z0-9_]):
+ *      - {Dept}_Contributors  (display: "{Dept} Contributors")
+ *      - {Dept}_Reviewers     (display: "{Dept} Reviewers")
+ *      - {Dept}_Managers      (display: "{Dept} Managers")
+ *      - {Dept}_Readers       (display: "{Dept} Readers")
+ *
+ * 3. Permissions (parent-permission inheritance DISABLED on all four folders):
+ *      +------------+--------------+--------------+--------------+------------+
+ *      | Folder     | Contributors | Reviewers    | Managers     | Readers    |
+ *      +------------+--------------+--------------+--------------+------------+
+ *      | _Draft     | Collaborator | Consumer     | Consumer     | Consumer   |
+ *      | _Review    | Consumer     | Collaborator | Collaborator | Consumer   |
+ *      | _Published | Consumer     | Consumer     | Collaborator | Consumer   |
+ *      | _Archive   | Consumer     | Consumer     | Coordinator  | Consumer   |
+ *      +------------+--------------+--------------+--------------+------------+
+ *
+ * PUBLIC METHODS
+ * --------------
+ * init()
+ *     Spring lifecycle hook; binds this behaviour to OnCreateNodePolicy for
+ *     cm:folder at TRANSACTION_COMMIT frequency.
+ *
+ * onCreateNode(ChildAssociationRef childAssocRef)
+ *     Policy callback. Validates the created node/parent against the trigger
+ *     conditions and, if it is a new department folder, dispatches
+ *     createDepartmentStructure(...) as the system user.
+ *
+ * PRIVATE HELPER METHODS
+ * ----------------------
+ * createDepartmentStructure(NodeRef deptFolder, String deptName)
+ *     Orchestrates the full provisioning: ensures the four lifecycle folders,
+ *     ensures the four groups, applies the permission matrix, and adds the
+ *     cm:versionable aspect to every lifecycle folder.
+ *
+ * ensureFolder(NodeRef parent, String name)
+ *     Idempotent find-or-create of a child cm:folder (searchSimple first,
+ *     then create). Sets cm:title to the folder name. Returns the NodeRef.
+ *
+ * ensureGroup(String shortName, String displayName)
+ *     Idempotent find-or-create of a GROUP authority via AuthorityService.
+ *     Returns the full authority name (e.g. GROUP_President_Contributors).
+ *
+ * applyPermissions(NodeRef folder, boolean inherit, String[]... entries)
+ *     Sets parent-permission inheritance flag, then grants each
+ *     (authority, permission) pair on the folder.
+ *
+ * perm(String authority, String permission)
+ *     Small helper building a {authority, permission} pair array.
+ *
+ * setPolicyComponent / setNodeService / setFileFolderService /
+ * setAuthorityService / setPermissionService
+ *     Spring dependency-injection setters for the required services.
+ *
+ * INJECTED SERVICES
+ * -----------------
+ * PolicyComponent, NodeService, FileFolderService, AuthorityService,
+ * PermissionService.
+ *
+ * CONSTANTS
+ * ---------
+ * CUD_MODEL_URI          = "http://www.cud.ac.ae/model/content/1.0"
+ * ASPECT_DEPARTMENT_ROOT = cud:departmentRoot
+ * LIFECYCLE_SUFFIXES     = _Draft, _Review, _Published, _Archive
+ *
+ * NOTES
+ * -----
+ * - Idempotent: ensureFolder/ensureGroup reuse existing artifacts, so a
+ *   re-run will not duplicate folders or groups.
+ * - The recursion guard relies on the lifecycle suffixes; folders whose name
+ *   ends with one of them are ignored by the behaviour.
+ *
+ * @see org.alfresco.repo.node.NodeServicePolicies.OnCreateNodePolicy
+ * @see org.alfresco.repo.policy.JavaBehaviour
+ * =============================================================================
  */
 public class CudAutoDepartmentBehaviour implements NodeServicePolicies.OnCreateNodePolicy {
 
@@ -95,7 +207,12 @@ public class CudAutoDepartmentBehaviour implements NodeServicePolicies.OnCreateN
             @Override
             public Void doWork() {
                 try {
+                    
+                    permissionService.setInheritParentPermissions(deptFolder, false);
+                    logger.info("Inherit parent permissions DISABLED on department root: " + deptFolder);
+
                     createDepartmentStructure(deptFolder, deptName);
+                    removeCreateAndUploadOnRoot(deptFolder);
                 } catch (Exception e) {
                     logger.error("CUD auto-department failed for: " + deptName, e);
                 }
@@ -103,6 +220,7 @@ public class CudAutoDepartmentBehaviour implements NodeServicePolicies.OnCreateN
             }
         }, AuthenticationUtil.getSystemUserName());
     }
+    
     private void createDepartmentStructure(NodeRef deptFolder, String deptName) {
         String safeName = deptName.replaceAll("[^a-zA-Z0-9]", "_");
 
@@ -115,6 +233,15 @@ public class CudAutoDepartmentBehaviour implements NodeServicePolicies.OnCreateN
         String groupReviewers    = ensureGroup(safeName + "_Reviewers",    deptName + " Reviewers");
         String groupManagers     = ensureGroup(safeName + "_Managers",     deptName + " Managers");
         String groupReaders      = ensureGroup(safeName + "_Readers",      deptName + " Readers");
+
+        // Apply all the created permissions to the department (parent) folder first,
+        // looping over all of the created groups
+        String[] deptGroups = { groupContributors, groupReviewers, groupManagers, groupReaders };
+        String[][] deptPermEntries = new String[deptGroups.length][];
+        for (int i = 0; i < deptGroups.length; i++) {
+            deptPermEntries[i] = perm(deptGroups[i], "Collaborator");
+        }
+        applyPermissions(deptFolder, false, deptPermEntries);
 
         applyPermissions(draft, false,
                 perm(groupContributors, "Collaborator"),
@@ -149,6 +276,41 @@ public class CudAutoDepartmentBehaviour implements NodeServicePolicies.OnCreateN
         logger.info("CUD auto-department finished for: " + deptName
                 + " | groups: " + groupContributors + ", " + groupReviewers
                 + ", " + groupManagers + ", " + groupReaders);
+    }
+
+    /**
+     * Explicitly removes CreateChildren / AddChildren (and therefore Upload)
+     * from the department root folder.
+     * <p>
+     * Sub-folders created by the space template keep their normal permissions
+     * and can still accept content.
+     */
+    private void removeCreateAndUploadOnRoot(NodeRef deptName) {
+        
+        // Deny CreateChildren for every authority that currently has any permission
+        // on the node (except System / Admin which are handled separately).
+        for (AccessPermission ap : permissionService.getAllSetPermissions(deptName)) {
+            String authority = ap.getAuthority();
+
+            // Never touch the special system authorities
+            if (PermissionService.ALL_AUTHORITIES.equals(authority)
+                    || PermissionService.OWNER_AUTHORITY.equals(authority)
+                    || "ROLE_ADMINISTRATOR".equals(authority)
+                    || "GROUP_ALFRESCO_ADMINISTRATORS".equals(authority)) {
+                continue;
+            }
+
+            // Explicitly deny the ability to create children / upload
+            permissionService.setPermission(deptName, authority,
+                    PermissionService.CREATE_CHILDREN, false);
+            permissionService.setPermission(deptName, authority,
+                    PermissionService.ADD_CHILDREN, false);
+            // Also deny Write if you want a pure "read-only root"
+            permissionService.setPermission(deptName, authority,
+                     PermissionService.WRITE, false);
+        }
+
+        logger.info("Create / Upload disabled on department root " + deptName);
     }
 
     private NodeRef ensureFolder(NodeRef parent, String name) {

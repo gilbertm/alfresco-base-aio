@@ -8,6 +8,31 @@
          <cm:titled/>
          <cud:departmentRoot/>
       </view:aspects>
+      <!-- ============================================================
+           Disable inheritance + remove Create/Upload on the template
+           ============================================================ -->
+      <view:acl view:inherit="false">
+         <!-- Everyone can only read the template (no create / upload) -->
+         <view:ace view:access="ALLOWED">
+            <view:authority>GROUP_EVERYONE</view:authority>
+            <view:permission>Consumer</view:permission>
+         </view:ace>
+         <!-- Explicitly deny the create/upload permissions -->
+         <view:ace view:access="DENIED">
+            <view:authority>GROUP_EVERYONE</view:authority>
+            <view:permission>CreateChildren</view:permission>
+         </view:ace>
+         <view:ace view:access="DENIED">
+            <view:authority>GROUP_EVERYONE</view:authority>
+            <view:permission>AddChildren</view:permission>
+         </view:ace>
+         <!-- Keep administrators fully able to manage the template -->
+         <view:ace view:access="ALLOWED">
+            <view:authority>GROUP_ALFRESCO_ADMINISTRATORS</view:authority>
+            <view:permission>Coordinator</view:permission>
+         </view:ace>
+      </view:acl>
+
       <view:properties>
          <cm:name>CUD Document Management System V2</cm:name>
          <cm:title>CUD Document Management System V2</cm:title>
