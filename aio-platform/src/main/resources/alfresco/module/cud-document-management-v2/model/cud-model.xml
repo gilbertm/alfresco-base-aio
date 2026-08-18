@@ -3,7 +3,7 @@
 
    <description>CUD Document Management Model</description>
    <author>CUD</author>
-   <version>1.0</version>
+   <version>1.1</version>
 
    <imports>
       <import uri="http://www.alfresco.org/model/dictionary/1.0" prefix="d"/>
@@ -14,19 +14,60 @@
       <namespace uri="http://www.cud.ac.ae/model/content/1.0" prefix="cud"/>
    </namespaces>
 
+   <constraints>
+      <!-- Allowed document lifecycle states -->
+      <constraint name="cud:lifecycleStatusList" type="LIST">
+         <parameter name="allowedValues">
+            <list>
+               <value>DRAFT</value>
+               <value>REVIEW</value>
+               <value>PUBLISHED</value>
+               <value>ARCHIVED</value>
+            </list>
+         </parameter>
+      </constraint>
+   </constraints>
+
    <aspects>
-      <!--
-         Place on the CUD space-template root.
-         Any space created from that template keeps the aspect.
-         Behaviour only runs for folders created directly under such a node.
-      -->
-      <aspect name="cud:departmentRoot">
-         <title>CUD Department Root</title>
-         <description>
-            Direct child folders receive Draft/Review/Published/Archive structure,
-            groups and permissions automatically.
-         </description>
-      </aspect>
+       <!--
+          Place on the CUD space-template root.
+          Any space created from that template keeps the aspect.
+          Behaviour only runs for folders created directly under such a node.
+       -->
+       <aspect name="cud:departmentRoot">
+          <title>CUD Department Root</title>
+          <description>
+             Direct child folders receive Draft/Review/Published/Archive structure,
+             groups and permissions automatically.
+          </description>
+       </aspect>
+
+       <!--
+          Applied to documents managed by the CUD lifecycle workflow.
+          The status travels with the document; the physical folder mirrors it.
+       -->
+       <aspect name="cud:documentLifecycle">
+          <title>CUD Document Lifecycle</title>
+          <properties>
+             <property name="cud:lifecycleStatus">
+                <title>Lifecycle Status</title>
+                <type>d:text</type>
+                <default>DRAFT</default>
+                <constraints>
+                   <constraint ref="cud:lifecycleStatusList"/>
+                </constraints>
+             </property>
+             <property name="cud:statusChangedAt">
+                <title>Last Status Change</title>
+                <type>d:datetime</type>
+             </property>
+             <property name="cud:statusHistory">
+                <title>Status History</title>
+                <type>d:text</type>
+                <multiple>true</multiple>
+             </property>
+          </properties>
+       </aspect>
    </aspects>
 
 </model>

@@ -11,8 +11,31 @@
       <property name="models">
          <list>
             <value>alfresco/module/cud-document-management-v2/model/cud-model.xml</value>
+            <value>alfresco/module/cud-document-management-v2/model/cud-workflow-model.xml</value>
          </list>
       </property>
+   </bean>
+
+   <!-- Lifecycle workflow delegates -->
+   <bean id="cudDocumentTransitionDelegate"
+         class="ae.ac.cud.workflow.lifecycle.CudDocumentTransitionDelegate">
+      <property name="nodeService" ref="NodeService"/>
+      <property name="fileFolderService" ref="FileFolderService"/>
+      <property name="lockService" ref="LockService"/>
+   </bean>
+
+   <!-- Lifecycle task listener (TaskListener approach — used by cud-document-lifecycle.bpmn20.xml) -->
+   <bean id="cudDocumentLifecycleTaskListener"
+         class="ae.ac.cud.workflow.lifecycle.CudDocumentLifecycleTaskListener">
+      <property name="nodeService" ref="NodeService"/>
+      <property name="fileFolderService" ref="FileFolderService"/>
+      <property name="lockService" ref="LockService"/>
+   </bean>
+
+   <bean id="cudRevisionDelegate"
+         class="ae.ac.cud.workflow.lifecycle.CudRevisionDelegate">
+      <property name="nodeService" ref="NodeService"/>
+      <property name="fileFolderService" ref="FileFolderService"/>
    </bean>
 
    <!-- OnCreateNode behaviour -->

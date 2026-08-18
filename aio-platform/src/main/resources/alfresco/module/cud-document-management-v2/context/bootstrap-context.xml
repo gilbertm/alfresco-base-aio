@@ -26,4 +26,27 @@
       </property>
    </bean>
 
+   <!-- CUD Document Lifecycle workflows -->
+   <bean id="cud.v2.workflowBootstrap" parent="workflowDeployer">
+      <property name="workflowDefinitions">
+         <list>
+            <props>
+               <prop key="engineId">activiti</prop>
+               <prop key="location">alfresco/module/cud-document-management-v2/workflow/cud-document-lifecycle.bpmn20.xml</prop>
+               <prop key="mimetype">text/xml</prop>
+            </props>
+            <props>
+               <prop key="engineId">activiti</prop>
+               <prop key="location">alfresco/module/cud-document-management-v2/workflow/cud-document-revision.bpmn20.xml</prop>
+               <prop key="mimetype">text/xml</prop>
+            </props>
+         </list>
+      </property>
+      <property name="labels">
+         <list>
+            <value>alfresco/module/cud-document-management-v2/workflow/cud-workflow-messages</value>
+         </list>
+      </property>
+   </bean>
+
 </beans>

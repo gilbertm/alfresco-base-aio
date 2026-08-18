@@ -25,8 +25,8 @@
         </property>
     </bean>
 
-    <bean id="ae.ac.cud.sampleprocess.workflowBootstrap" parent="workflowDeployer">
-        <property name="workflowDefinitions">
+    <!-- bean id="ae.ac.cud.sampleprocess.workflowBootstrap" parent="workflowDeployer">
+        property name="workflowDefinitions">
             <list>
                 <props>
                     <prop key="engineId">activiti</prop>
@@ -52,5 +52,5 @@
                 <value>alfresco/module/${project.artifactId}/messages/advance-workflow-messages</value>
             </list>
         </property>
-    </bean>
+    </bean -->
 </beans>

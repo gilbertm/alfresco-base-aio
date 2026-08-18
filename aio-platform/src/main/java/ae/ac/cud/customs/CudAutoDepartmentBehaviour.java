@@ -78,11 +78,25 @@ import org.apache.commons.logging.LogFactory;
  *      +------------+--------------+--------------+--------------+------------+
  *      | Folder     | Contributors | Reviewers    | Managers     | Readers    |
  *      +------------+--------------+--------------+--------------+------------+
- *      | _Draft     | Collaborator | Consumer     | Consumer     | Consumer   |
- *      | _Review    | Consumer     | Collaborator | Collaborator | Consumer   |
+ *      | _Draft     | Contributor  | N/A          | N/A          | N/A        |
+ *      | _Review    | N/A          | Collaborator | N/A          | N/A        |
  *      | _Published | Consumer     | Consumer     | Collaborator | Consumer   |
- *      | _Archive   | Consumer     | Consumer     | Coordinator  | Consumer   |
+ *      | _Archive   | N/A          | N/A          | Consumer     | N/A        |
  *      +------------+--------------+--------------+--------------+------------+
+ * 
+ *      Manager / Coordinator: 
+ *              Grants full administrative rights. Users can create, read, edit, and delete any content within the space, regardless of who uploaded it. 
+ *              They can also manage local user permissions and invite others.
+ *      Collaborator: Grants full editing privileges but restricts destructive actions.
+ *              Collaborators can view, create, and edit any file, but they are forbidden from moving or deleting content uploaded by other users.
+ *      Contributor: Designed for standard content creators. 
+ *              Contributors can view all files and have full authority to add, edit, or delete their own documents. 
+ *              However, they cannot modify or delete files belonging to others.
+ *      Consumer: Provides view-only access. Consumers can navigate folders, view metadata, and read/download files, 
+ *              but they cannot upload, edit, or delete any content.
+ * 
+ *      ** Groups - Special Case: If a user is added to the readers group, he is entitled only to view the published document
+ *                     This is very good permission on allowing specific people on this particular folder
  *
  * PUBLIC METHODS
  * --------------
@@ -239,33 +253,51 @@ public class CudAutoDepartmentBehaviour implements NodeServicePolicies.OnCreateN
         String[] deptGroups = { groupContributors, groupReviewers, groupManagers, groupReaders };
         String[][] deptPermEntries = new String[deptGroups.length][];
         for (int i = 0; i < deptGroups.length; i++) {
-            deptPermEntries[i] = perm(deptGroups[i], "Collaborator");
+            deptPermEntries[i] = perm(deptGroups[i], PermissionService.CONSUMER);
         }
         applyPermissions(deptFolder, false, deptPermEntries);
 
+        // | Folder     | Contributors | Reviewers    | Managers     | Readers    |
+        // +------------+--------------+--------------+--------------+------------+
+        // | _Draft     | Contributor  | N/A          | N/A          | N/A        |
         applyPermissions(draft, false,
-                perm(groupContributors, "Collaborator"),
-                perm(groupReviewers,    PermissionService.CONSUMER),
-                perm(groupManagers,     PermissionService.CONSUMER),
-                perm(groupReaders,      PermissionService.CONSUMER));
+                perm(groupContributors, "Contributor")
+                // ,
+                // perm(groupReviewers,    PermissionService.CONSUMER),
+                // perm(groupManagers,     PermissionService.CONSUMER),
+                // perm(groupReaders,      PermissionService.CONSUMER)
+            );
 
+        // | Folder     | Contributors | Reviewers    | Managers     | Readers    |
+        // +------------+--------------+--------------+--------------+------------+
+        // | _Review    | N/A          | Collaborator | N/A          | N/A        |
         applyPermissions(review, false,
-                perm(groupReviewers,    "Collaborator"),
-                perm(groupManagers,     "Collaborator"),
-                perm(groupContributors, PermissionService.CONSUMER),
-                perm(groupReaders,      PermissionService.CONSUMER));
+                perm(groupReviewers,    "Collaborator")
+                // ,
+                // perm(groupManagers,     "Collaborator"),
+                // perm(groupContributors, PermissionService.CONSUMER),
+                // perm(groupReaders,      PermissionService.CONSUMER)
+            );
 
+        // | Folder     | Contributors | Reviewers    | Managers     | Readers    |
+        // +------------+--------------+--------------+--------------+------------+
+        // | _Published | Consumer     | Consumer     | Collaborator | Consumer   |
         applyPermissions(published, false,
                 perm(groupContributors, PermissionService.CONSUMER),
                 perm(groupReviewers,    PermissionService.CONSUMER),
-                perm(groupReaders,      PermissionService.CONSUMER),
-                perm(groupManagers,     "Collaborator"));
+                perm(groupManagers,     "Collaborator"),
+                perm(groupReaders,      PermissionService.CONSUMER)
+            );
 
+        // | Folder     | Contributors | Reviewers    | Managers     | Readers    |
+        // +------------+--------------+--------------+--------------+------------+
+        // | _Archive   | N/A          | N/A          | Consumer     | N/A        |
         applyPermissions(archive, false,
-                perm(groupContributors, PermissionService.CONSUMER),
-                perm(groupReviewers,    PermissionService.CONSUMER),
-                perm(groupReaders,      PermissionService.CONSUMER),
-                perm(groupManagers,     PermissionService.COORDINATOR));
+                // perm(groupContributors, PermissionService.CONSUMER),
+                // perm(groupReviewers,    PermissionService.CONSUMER),
+                // perm(groupReaders,      PermissionService.CONSUMER),
+                perm(groupManagers,     PermissionService.COORDINATOR)
+            );
 
         for (NodeRef f : new NodeRef[]{ draft, review, published, archive }) {
             if (!nodeService.hasAspect(f, ContentModel.ASPECT_VERSIONABLE)) {

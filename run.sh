@@ -67,11 +67,17 @@ test() {
     $MVN_EXEC verify -pl aio-platform,aio-integration-tests
 }
 
+post() {
+    docker compose -f "$COMPOSE_FILE_PATH" exec aio-share java -jar /usr/local/tomcat/alfresco-mmt/alfresco-mmt-26.1.0.61.jar uninstall org.alfresco.integrations.share.google.docs /usr/local/tomcat/webapps/share
+    docker compose -f "$COMPOSE_FILE_PATH" restart aio-share
+}
+
 case "$1" in
   build_start)
     down
     build
     start
+    post
     tail
     ;;
   build_start_it_supported)

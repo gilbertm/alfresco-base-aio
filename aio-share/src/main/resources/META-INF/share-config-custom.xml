@@ -60,6 +60,12 @@
         </types>
     </config>
 
+
+    <config evaluator="string-compare" condition="DocumentLibrary" replace="true">
+        <google-docs>
+        <enabled>false</enabled>
+        </google-docs>
+    </config>
     <!--================================================================================================================
           Advanced Search Forms for types
           (search forms for aspects are not available)

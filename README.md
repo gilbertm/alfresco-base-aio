@@ -46,3 +46,14 @@ All the services of the project are now run as docker containers. The run script
 
   * Abstract assembly into a dependency so we don't have to ship the assembly in the archetype
   * Functional/remote unit tests
+
+
+# Remove all Docker Images
+* docker compose -f "${PWD}/target/classes/docker/docker-compose.yml" down --rmi all --remove-orphans
+
+# Check if the google modules are present
+* docker compose -f target/classes/docker/docker-compose.yml exec aio-share \
+  java -jar /usr/local/tomcat/alfresco-mmt/alfresco-mmt-26.1.0.61.jar uninstall org.alfresco.integrations.share.google.docs /usr/local/tomcat/webapps/share
+
+# Restart the aio-share
+* docker compose -f target/classes/docker/docker-compose.yml restart aio-share
