@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model name="cudwf:model" xmlns="http://www.alfresco.org/model/dictionary/1.0">
+
+   <description>CUD Document Lifecycle Workflow Model</description>
+   <author>CUD</author>
+   <version>1.0</version>
+
+   <imports>
+      <import uri="http://www.alfresco.org/model/dictionary/1.0" prefix="d"/>
+      <import uri="http://www.alfresco.org/model/content/1.0" prefix="cm"/>
+      <import uri="http://www.alfresco.org/model/bpm/1.0" prefix="bpm"/>
+   </imports>
+
+   <namespaces>
+      <namespace uri="http://www.cud.ac.ae/model/workflow/1.0" prefix="cudwf"/>
+   </namespaces>
+
+   <types>
+
+      <!-- Start task: author submits document(s) from {Dept}_Draft for review -->
+      <type name="cudwf:submitForReviewStart">
+         <parent>bpm:startTask</parent>
+         <properties>
+            <property name="cudwf:submitComment">
+               <title>Comment for Reviewer</title>
+               <type>d:mltext</type>
+            </property>
+         </properties>
+      </type>
+
+      <!-- Review task: reviewer approves (publish) or rejects (back to draft) -->
+      <type name="cudwf:reviewTask">
+         <parent>bpm:workflowTask</parent>
+         <properties>
+            <property name="cudwf:approved">
+               <title>Approved</title>
+               <type>d:boolean</type>
+               <mandatory>true</mandatory>
+               <default>false</default>
+            </property>
+            <property name="cudwf:reviewComment">
+               <title>Review Comment</title>
+               <type>d:mltext</type>
+            </property>
+         </properties>
+      </type>
+
+      <!-- Start task: manager/owner submits a published document for revision -->
+      <type name="cudwf:submitForRevisionStart">
+         <parent>bpm:startTask</parent>
+         <properties>
+            <property name="cudwf:revisionComment">
+               <title>Revision Instructions</title>
+               <type>d:mltext</type>
+            </property>
+         </properties>
+      </type>
+
+   </types>
+
+</model>

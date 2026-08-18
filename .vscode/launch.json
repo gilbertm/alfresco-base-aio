@@ -1,0 +1,93 @@
+{
+    // Java debugging for the entire Alfresco AIO solution (SDK 4.16.0).
+    //
+    // HOW IT WORKS:
+    // - ACS (aio-platform) and Share (aio-share) run in Docker containers started via
+    //   ./run.sh build_start (or run.bat), or via the tasks in .vscode/tasks.json:
+    //       Terminal > Run Task > "AIO: build and start stack (Docker)"
+    //   docker-compose.yml already starts both JVMs with a JDWP debug agent listening
+    //   inside the containers.
+    // - Debug ports are published to the host:
+    //     * ACS repository (Tomcat) ....... localhost:8888
+    //     * Share          (Tomcat) ....... localhost:9898
+    // - Use the "Attach" configurations below to connect the VS Code Java debugger
+    //   to the running containers and set breakpoints in aio-platform / aio-share code.
+    //
+    // TYPICAL WORKFLOW:
+    // 1. ./run.sh build_start        (build everything and start all containers)
+    // 2. Wait until ACS/Share are up (~1-2 min), then run from the
+    //    "Run and Debug" panel:
+    //       "Debug ACS Repository (Docker)" and/or "Debug Share (Docker)",
+    //    or the compound "Debug ACS + Share (Docker)" to attach to both at once.
+    // 3. Set breakpoints in aio-platform / aio-share Java code - they hit when the
+    //    corresponding code path executes inside the container.
+    // 4. After code changes: ./run.sh reload_acs  (or reload_share) and re-attach.
+    //
+    // UNIT / INTEGRATION TESTS:
+    // - VS Code's "Testing" panel (Java Test Runner) can run/debug JUnit tests in
+    //   aio-platform (unit) and aio-integration-tests (needs running stack, see
+    //   aio-integration-tests/README). No launch config needed - use the CodeLens
+    //   "Debug Test" links above test classes/methods.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // Attach to the Alfresco Content Services (repository) container.
+            // Debugs custom repo-side code from the aio-platform module
+            // (Java classes, webscripts, workflow task listeners, behaviors, etc.)
+            "type": "java",
+            "name": "Debug ACS Repository (Docker)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 8888,
+            "projectName": "aio-platform"
+        },
+        {
+            // Attach to the Alfresco Share container.
+            // Debugs custom Share-side code from the aio-share module.
+            "type": "java",
+            "name": "Debug Share (Docker)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 9898,
+            "projectName": "aio-share"
+        },
+        {
+            // Convenience config: (re)build and start the ACS stack, then attach.
+            // Uses the shell tasks defined in .vscode/tasks.json.
+            "type": "java",
+            "name": "Build, Start & Debug ACS (Docker)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 8888,
+            "projectName": "aio-platform",
+            "preLaunchTask": "AIO: rebuild and restart ACS"
+        },
+        {
+            // Convenience config: (re)build and start the Share stack, then attach.
+            "type": "java",
+            "name": "Build, Start & Debug Share (Docker)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 9898,
+            "projectName": "aio-share",
+            "preLaunchTask": "AIO: rebuild and restart Share"
+        },
+        {
+            // Run/debug the currently open Java file as a main class.
+            "type": "java",
+            "name": "Debug Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        }
+    ],
+    "compounds": [
+        {
+            // Attach to both ACS and Share containers at the same time.
+            "name": "Debug ACS + Share (Docker)",
+            "configurations": [
+                "Debug ACS Repository (Docker)",
+                "Debug Share (Docker)"
+            ]
+        }
+    ]
+}

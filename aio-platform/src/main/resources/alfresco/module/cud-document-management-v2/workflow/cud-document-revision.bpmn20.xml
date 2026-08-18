@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<definitions
+        xmlns:activiti="http://activiti.org/bpmn"
+        xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        typeLanguage="http://www.w3.org/2001/XMLSchema"
+        expressionLanguage="http://www.w3.org/1999/XPath"
+        targetNamespace="http://www.cud.ac.ae/workflow">
+
+   <!--
+       CUD Document Revision ("Submit for Revision" action):
+
+       Started from the Published folder by the owner/manager on a
+       published document. Copies the document into {Dept}_Draft
+       (name + "_rev") so it can be revised and re-submitted through the
+       CUD Document Lifecycle workflow. The published original stays in
+       {Dept}_Published, locked, status PUBLISHED.
+
+       This is the simple v1 path: single service task, immediate end.
+       (A later iteration can add a confirm task / revision assignment.)
+   -->
+   <process id="cud-document-revision" name="CUD Document Revision">
+
+      <startEvent id="start" activiti:formKey="cudwf:submitForRevisionStart"/>
+      <sequenceFlow id="flow-start-to-copy" sourceRef="start" targetRef="copyToDraft"/>
+
+      <!-- PUBLISHED -> DRAFT : content copied into {Dept}_Draft -->
+      <serviceTask id="copyToDraft" name="Copy to Draft folder"
+                   activiti:delegateExpression="${cudRevisionDelegate}"/>
+      <sequenceFlow id="flow-copy-to-end" sourceRef="copyToDraft" targetRef="end"/>
+
+      <endEvent id="end"/>
+
+   </process>
+
+</definitions>

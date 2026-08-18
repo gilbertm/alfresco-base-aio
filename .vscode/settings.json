@@ -1,5 +1,19 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
+    // Multi-module Maven AIO project settings for Java debugging
+    "java.import.maven.enabled": true,
+    "java.configuration.updateBuildConfiguration": "automatic",
+    // Do not force a full rebuild before launching/attaching; the containers are
+    // built by Maven tasks (tasks.json) - keeps "Build, Start & Debug ..." fast.
+    "java.debug.settings.forceBuildBeforeLaunch": false,
+    "java.debug.settings.console": "internalConsole",
+    // Source level matches the Alfresco SDK (Java 17 for ACS 26.x)
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "default": true
+        }
+    ],
     "terminal.integrated.profiles.windows": {
         "WSL": {
             "path": "C:\\Windows\\System32\\wsl.exe"

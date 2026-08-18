@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<definitions
+        xmlns:activiti="http://activiti.org/bpmn"
+        xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        typeLanguage="http://www.w3.org/2001/XMLSchema"
+        expressionLanguage="http://www.w3.org/1999/XPath"
+        targetNamespace="http://www.cud.ac.ae/workflow">
+   <!--
+       CUD Document Lifecycle v2 (TaskListener approach):
+
+       DRAFT   - author uploads sample_document_v1.pdf into {Dept}_Draft
+                 and starts this workflow on it.
+       REVIEW  - on submission the document is MOVED to {Dept}_Review
+                 and a review task is created for the initiator
+                 (switch to a reviewer group in a later iteration).
+       PUBLISH - reviewer approves: document MOVED to {Dept}_Published
+                 and locked (owner lock) so it is read-only for everyone
+                 except the owner / users with unlock rights.
+       REJECT  - reviewer rejects: document MOVED back to {Dept}_Draft.
+
+       The transition logic (folder move + lock/unlock) is handled by
+       CudDocumentLifecycleTaskListener:
+         - event="create"  -> moves documents to {Dept}_Review
+         - event="complete" -> reads cudwf_approved and moves documents
+           to {Dept}_Published (approve) or {Dept}_Draft (reject)
+
+       Revision of a published document is handled by
+       cud-document-revision.bpmn20.xml ("Submit for Revision").
+   -->
+   <process id="cud-document-lifecycle" name="CUD Document Lifecycle">
+
+      <!-- Start: author submits document(s) from {Dept}_Draft -->
+      <startEvent id="start" activiti:formKey="cudwf:submitForReviewStart"/>
+      <sequenceFlow id="flow-start-to-task" sourceRef="start" targetRef="customReviewTask"/>
+
+      <!-- Review task: approve (publish) or reject (back to draft)
+           The TaskListener handles:
+           - create: moves documents to {Dept}_Review and assigns to initiator
+           - complete: moves documents to {Dept}_Published or {Dept}_Draft -->
+      <userTask id="customReviewTask" name="Review &amp; Approve"
+                  activiti:formKey="cudwf:reviewTask">
+         <extensionElements>
+            <activiti:taskListener event="create"
+                                   activiti:class="ae.ac.cud.workflow.lifecycle.CudDocumentLifecycleTaskListener" />
+            <activiti:taskListener event="complete"
+                                   activiti:class="ae.ac.cud.workflow.lifecycle.CudDocumentLifecycleTaskListener" />
+         </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow-task-to-end" sourceRef="customReviewTask" targetRef="end"/>
+
+      <endEvent id="end"/>
+
+   </process>
+
+</definitions>

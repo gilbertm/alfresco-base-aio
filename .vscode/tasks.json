@@ -1,0 +1,124 @@
+{
+    // Build/start tasks for the Alfresco AIO solution (used by launch.json).
+    // Runs inside WSL (the default terminal profile). Same commands as run.sh,
+    // but WITHOUT the blocking "logs -f" tail so debug attach can proceed.
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "AIO: rebuild and restart ACS",
+            "type": "shell",
+            "detail": "mvn clean package for ACS modules, rebuild and restart the aio-acs container, wait for JDWP port 8888",
+            "command": "export COMPOSE_FILE_PATH=\"${PWD}/target/classes/docker/docker-compose.yml\" && mvn clean package -DskipTests -pl aio-integration-tests,aio-platform,aio-platform-docker && docker volume create aio-acs-volume >/dev/null 2>&1; docker volume create aio-db-volume >/dev/null 2>&1; docker volume create aio-ass-volume >/dev/null 2>&1; docker compose -f \"$COMPOSE_FILE_PATH\" up -d --build aio-postgres aio-ass aio-activemq aio-acs && for i in $(seq 1 90); do (exec 3<>/dev/tcp/localhost/8888) 2>/dev/null && { echo 'ACS debug port 8888 is up'; break; }; sleep 2; done",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "AIO: rebuild and restart Share",
+            "type": "shell",
+            "detail": "mvn clean package for Share modules, rebuild and restart the aio-share container, wait for JDWP port 9898",
+            "command": "export COMPOSE_FILE_PATH=\"${PWD}/target/classes/docker/docker-compose.yml\" && mvn clean package -DskipTests -pl aio-share,aio-share-docker && docker compose -f \"$COMPOSE_FILE_PATH\" up -d --build aio-share && for i in $(seq 1 90); do (exec 3<>/dev/tcp/localhost/9898) 2>/dev/null && { echo 'Share debug port 9898 is up'; break; }; sleep 2; done",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "AIO: build and start full stack",
+            "type": "shell",
+            "detail": "Equivalent of ./run.sh build_start (without log tail)",
+            "command": "export COMPOSE_FILE_PATH=\"${PWD}/target/classes/docker/docker-compose.yml\" && docker compose -f \"$COMPOSE_FILE_PATH\" down 2>/dev/null; mvn clean package -DskipTests && docker volume create aio-acs-volume >/dev/null 2>&1; docker volume create aio-db-volume >/dev/null 2>&1; docker volume create aio-ass-volume >/dev/null 2>&1; docker compose -f \"$COMPOSE_FILE_PATH\" up -d --build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "AIO: stop stack",
+            "type": "shell",
+            "detail": "Equivalent of ./run.sh stop",
+            "command": "if [ -f \"${PWD}/target/classes/docker/docker-compose.yml\" ]; then docker compose -f \"${PWD}/target/classes/docker/docker-compose.yml\" down; else echo 'Stack not built yet (no target/classes/docker/docker-compose.yml)'; fi",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "AIO: tail container logs",
+            "type": "shell",
+            "detail": "Follow logs of all containers",
+            "command": "docker compose -f \"${PWD}/target/classes/docker/docker-compose.yml\" logs -f",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "AIO: run integration tests",
+            "type": "shell",
+            "detail": "Equivalent of ./run.sh test (requires the stack to be running)",
+            "command": "mvn verify -pl aio-platform,aio-integration-tests",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": ["$maven"]
+        }
+    ]
+}
