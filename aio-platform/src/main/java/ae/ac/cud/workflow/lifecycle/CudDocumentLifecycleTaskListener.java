@@ -174,16 +174,40 @@ public class CudDocumentLifecycleTaskListener implements TaskListener {
                 LOG.warn("[CUD Lifecycle TaskListener] 'initiator' variable is null – task not assigned");
             }
         } else if ("complete".equals(event)) {
-            // Task completed — decide target state based on approval
-            Object approved = delegateTask.getVariable("cudwf_approved");
-            LOG.info("[CUD Lifecycle TaskListener] event='complete' — cudwf_approved={} (type={})",
-                    approved, approved != null ? approved.getClass().getName() : "null");
+            // 1. Check all possible form property keys (local and execution scopes)
+            Object approved = delegateTask.getVariableLocal("cudwf_approved");
+            if (approved == null) approved = delegateTask.getVariable("cudwf_approved");
+            if (approved == null) approved = delegateTask.getVariableLocal("prop_cudwf_approved");
+            if (approved == null) approved = delegateTask.getVariable("prop_cudwf_approved");
+            if (approved == null) approved = delegateTask.getVariableLocal("cudwf:approved");
+            if (approved == null) approved = delegateTask.getVariable("cudwf:approved");
 
-            boolean isApproved = Boolean.TRUE.equals(approved)
-                    || "true".equalsIgnoreCase(String.valueOf(approved));
+            // 2. Check workflow outcome / transition buttons (e.g., "Approve", "Approved")
+            Object outcome = delegateTask.getVariableLocal("bpm_outcome");
+            if (outcome == null) outcome = delegateTask.getVariable("bpm_outcome");
+            if (outcome == null) outcome = delegateTask.getVariableLocal("bpm_outcomeName");
+            if (outcome == null) outcome = delegateTask.getVariable("bpm_outcomeName");
+            if (outcome == null) outcome = delegateTask.getVariableLocal("task_transition");
+            if (outcome == null) outcome = delegateTask.getVariable("task_transition");
+
+            LOG.info("[CUD Lifecycle TaskListener] complete event — resolved approved='{}' | outcome='{}'", approved, outcome);
+
+            boolean isApproved = false;
+
+            // Evaluate Boolean property
+            if (Boolean.TRUE.equals(approved) || "true".equalsIgnoreCase(String.valueOf(approved))) {
+                isApproved = true;
+            }
+            // Evaluate Transition / Button Outcome
+            else if (outcome != null) {
+                String outcomeStr = String.valueOf(outcome).trim();
+                if ("Approve".equalsIgnoreCase(outcomeStr) || "Approved".equalsIgnoreCase(outcomeStr)) {
+                    isApproved = true;
+                }
+            }
 
             String targetState = isApproved ? STATE_PUBLISHED : STATE_DRAFT;
-            LOG.info("[CUD Lifecycle TaskListener] task completed, approved={} -> targetState={}",
+            LOG.info("[CUD Lifecycle TaskListener] task completed, isApproved={} -> targetState={}",
                     isApproved, targetState);
 
             transitionDocuments(targetState, delegateTask);

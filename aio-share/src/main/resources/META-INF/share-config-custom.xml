@@ -541,14 +541,137 @@
         </forms>
     </config>
 
-    <!-- This is for the lifecycle forms -->
+
+    <!-- **********************************************************************
+    
+            This is for the lifecycle forms 
+    
+    ********************************************************************** -->
+    <!-- Workflow Start Form Config -->
     <config evaluator="string-compare" condition="cudwf:submitForReviewStart">
-        <forms>
-            <form>
+         <forms>
+            <form replace="true">
                 <field-visibility>
-                    <show id="bpm:packageItems" />
-                    <show id="cudwf:submitComment" />
+                    <show id="bpm:packageItems" force="true" />
+                    <show id="cudwf:submitComment" force="true" />
                 </field-visibility>
+
+                <appearance>
+                    <set id="pkg-set" appearance="title" label="Selected Document(s)" />
+                    <set id="comment-set" appearance="title" label="Submission Details" />
+
+                <!-- Explicit control template for workflow packages -->
+                <field id="bpm:packageItems" set="pkg-set" label="Documents to Submit">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl">
+                        <control-param name="allowNavigationToCollapsedCollections">false</control-param>
+                    </control>
+                </field>
+                
+                <field id="packageItems" set="pkg-set" label="Documents to Submit">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                </field>
+
+                <field id="cudwf:submitComment" set="comment-set" label="Comment for Reviewer">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
+
+    <!-- Fallback by workflow definition name -->
+    <config evaluator="string-compare" condition="activiti$cud-document-lifecycle">
+        <forms>
+            <form replace="true">
+                <field-visibility>
+                    <show id="bpm:packageItems" force="true" />
+                    <show id="cudwf:submitComment" force="true" />
+                </field-visibility>
+
+                <appearance>
+                    <set id="pkg-set" appearance="title" label="Selected Document(s)" />
+                    <set id="comment-set" appearance="title" label="Submission Details" />
+
+                <!-- Explicit control template for workflow packages -->
+                <field id="bpm:packageItems" set="pkg-set" label="Documents to Submit">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl">
+                        <control-param name="allowNavigationToCollapsedCollections">false</control-param>
+                    </control>
+                </field>
+                
+                <field id="packageItems" set="pkg-set" label="Documents to Submit">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                </field>
+
+                <field id="cudwf:submitComment" set="comment-set" label="Comment for Reviewer">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
+
+    <!-- 1. Match both task-type evaluator and string-compare -->
+    <config evaluator="task-type" condition="cudwf:reviewTask">
+        <forms>
+            <!-- Place replace="true" on <form> to completely suppress Alfresco defaults -->
+            <form replace="true">
+                <field-visibility>
+                    <show id="bpm:packageItems" force="true" />
+                    <show id="cudwf:reviewComment" force="true" />
+                    <show id="transitions" force="true" />
+                </field-visibility>
+
+                <appearance>
+                    <set id="pkg-set" appearance="title" label="Documents Up for Review" />
+                    <set id="comment-set" appearance="title" label="Review Notes" />
+                    <set id="response-set" appearance="title" label="Action" />
+
+                    <field id="bpm:packageItems" label="Documents Up for Review" read-only="true" />
+
+                    <field id="cudwf:reviewComment" set="comment-set" label="Comment">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
+                    </field>
+
+                    <field id="transitions" set="response-set">
+                        <control template="/org/alfresco/components/form/controls/workflow/transitions.ftl">
+                            <control-param name="hideSaveButton">true</control-param>
+                            <control-param name="hideCancelButton">true</control-param>
+                        </control>
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
+
+    <!-- Fallback duplicate for direct type match -->
+    <config evaluator="string-compare" condition="cudwf:reviewTask">
+        <forms>
+            <form replace="true">
+                <field-visibility>
+                    <show id="bpm:packageItems" force="true" />
+                    <show id="cudwf:reviewComment" force="true" />
+                    <show id="transitions" force="true" />
+                </field-visibility>
+
+                <appearance>
+                    <set id="pkg-set" appearance="title" label="Documents Up for Review" />
+                    <set id="comment-set" appearance="title" label="Review Notes" />
+                    <set id="response-set" appearance="title" label="Action" />
+
+                     <field id="bpm:packageItems" label="Documents Up for Review" read-only="true" />
+
+                    <field id="cudwf:reviewComment" set="comment-set" label="Comment">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
+                    </field>
+
+                    <field id="transitions" set="response-set">
+                        <control template="/org/alfresco/components/form/controls/workflow/transitions.ftl">
+                            <control-param name="hideSaveButton">true</control-param>
+                            <control-param name="hideCancelButton">true</control-param>
+                        </control>
+                    </field>
+                </appearance>
             </form>
         </forms>
     </config>
