@@ -17,11 +17,11 @@
    </bean>
 
    <!-- Lifecycle task listener (TaskListener approach — used by cud-document-lifecycle.bpmn20.xml) -->
-   <bean id="cudDocumentLifecycleTaskListener"
-         class="ae.ac.cud.workflow.lifecycle.CudDocumentLifecycleTaskListener">
-      <property name="nodeService" ref="NodeService"/>
-      <property name="fileFolderService" ref="FileFolderService"/>
-      <property name="lockService" ref="LockService"/>
+   <bean id="cudDocumentLifecycleTaskListener" 
+      class="ae.ac.cud.workflow.lifecycle.CudDocumentLifecycleTaskListener">
+      <property name="nodeService" ref="NodeService" />
+      <property name="fileFolderService" ref="FileFolderService" />
+      <property name="lockService" ref="LockService" />
    </bean>
 
    <bean id="cudRevisionDelegate"

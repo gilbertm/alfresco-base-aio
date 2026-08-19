@@ -540,4 +540,16 @@
             </form>
         </forms>
     </config>
+
+    <!-- This is for the lifecycle forms -->
+    <config evaluator="string-compare" condition="cudwf:submitForReviewStart">
+        <forms>
+            <form>
+                <field-visibility>
+                    <show id="bpm:packageItems" />
+                    <show id="cudwf:submitComment" />
+                </field-visibility>
+            </form>
+        </forms>
+    </config>
 </alfresco-config>
