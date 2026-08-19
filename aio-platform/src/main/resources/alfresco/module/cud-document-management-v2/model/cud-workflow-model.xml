@@ -20,12 +20,12 @@
       <!-- Start task: author submits document(s) from {Dept}_Draft for review -->
       <type name="cudwf:submitForReviewStart">
          <parent>bpm:startTask</parent>
-         <properties>
+         <!-- properties>
             <property name="cudwf:submitComment">
                <title>Comment for Reviewer</title>
                <type>d:mltext</type>
             </property>
-         </properties>
+         </properties -->
       </type>
 
       <!-- Review task: reviewer approves (publish) or rejects (back to draft) -->
@@ -38,10 +38,10 @@
                <mandatory>true</mandatory>
                <default>false</default>
             </property>
-            <property name="cudwf:reviewComment">
+            <!-- property name="cudwf:reviewComment">
                <title>Review Comment</title>
                <type>d:mltext</type>
-            </property>
+            </property -->
          </properties>
       </type>
 
