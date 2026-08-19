@@ -175,6 +175,21 @@ public class CudDocumentLifecycleTaskListener implements TaskListener {
         }
         LOG.info("[CUD Lifecycle TaskListener] resolved folder suffix='{}' for state='{}'", suffix, state);
 
+        /*
+         * bpm_package is the workflow variable that holds the document(s) selected
+         * by the user when starting the workflow.
+         *
+         * IMPORTANT: According to Alfresco's BPM model (bpm:startTask), the
+         * bpm:package association is defined with many=true, meaning it can hold
+         * MULTIPLE documents. The user can select one or more documents when
+         * starting the workflow from Share. In Alfresco's Activiti integration,
+         * bpm_package is ALWAYS exposed as a List, even when only a single
+         * document is selected (a List of size 1).
+         *
+         * See: CUSTOM-MODULE-DOCUMENT.md section 6.1
+         *   "Start task: user selects document(s)"
+         *   "Service task 1 moves every document in bpm_package"
+         */
         Object pkg = delegateTask.getVariable("bpm_package");
         LOG.info("[CUD Lifecycle TaskListener] bpm_package variable = {} | type={}",
                 pkg, pkg != null ? pkg.getClass().getName() : "null");
@@ -185,9 +200,15 @@ public class CudDocumentLifecycleTaskListener implements TaskListener {
             return;
         }
 
+        /*
+         * bpm_package must always be a List because bpm:package association
+         * has many=true. If it is not a List, something is misconfigured.
+         */
         if (!(pkg instanceof List)) {
             LOG.warn("[CUD Lifecycle TaskListener] bpm_package is NOT a List (actual type: {}). "
-                    + "Cannot iterate – nothing to move.", pkg.getClass().getName());
+                    + "This is unexpected because bpm:package association has many=true and should "
+                    + "always be a List (even for a single document). Cannot iterate – nothing to move.",
+                    pkg.getClass().getName());
             return;
         }
 
@@ -199,9 +220,46 @@ public class CudDocumentLifecycleTaskListener implements TaskListener {
             return;
         }
 
+        /* ================================================================
+         * LOG FILE(S) UP FOR REVIEW
+         * Summarize all document(s) that are part of this workflow
+         * submission before any move operation begins.
+         * ================================================================ */
+        LOG.info("[CUD Lifecycle TaskListener] ========== FILE(S) UP FOR REVIEW (target state: {}) ==========", state);
+        for (int i = 0; i < pkgList.size(); i++) {
+            Object reviewItem = pkgList.get(i);
+            if (reviewItem instanceof ActivitiScriptNode) {
+                NodeRef reviewDocRef = ((ActivitiScriptNode) reviewItem).getNodeRef();
+                FileInfo reviewDocInfo = null;
+                try {
+                    reviewDocInfo = fileFolderService.getFileInfo(reviewDocRef);
+                } catch (Exception e) {
+                    LOG.warn("[CUD Lifecycle TaskListener] Could not get FileInfo for review item[{}] nodeRef={}: {}",
+                            i, reviewDocRef, e.getMessage());
+                }
+                if (reviewDocInfo != null) {
+                    LOG.info("[CUD Lifecycle TaskListener]   File[{}] up for review: name='{}' | nodeRef={}",
+                            i, reviewDocInfo.getName(), reviewDocRef);
+                } else {
+                    LOG.info("[CUD Lifecycle TaskListener]   File[{}] up for review: nodeRef={} (FileInfo unavailable)",
+                            i, reviewDocRef);
+                }
+            } else {
+                LOG.info("[CUD Lifecycle TaskListener]   Item[{}] up for review: type={} | value={} (not an ActivitiScriptNode)",
+                        i, reviewItem != null ? reviewItem.getClass().getName() : "null", reviewItem);
+            }
+        }
+        LOG.info("[CUD Lifecycle TaskListener] ========== END FILE(S) UP FOR REVIEW ({} item(s) total) ==========", pkgList.size());
+
         int movedCount = 0;
         int skippedCount = 0;
 
+        /* ================================================================
+         * MOVING FILE(S) STARTS HERE
+         * Iterate over each document in bpm_package and move it to the
+         * target lifecycle folder (e.g., {Dept}_Review, {Dept}_Published,
+         * or {Dept}_Draft depending on the target state).
+         * ================================================================ */
         for (int i = 0; i < pkgList.size(); i++) {
             Object item = pkgList.get(i);
             LOG.info("[CUD Lifecycle TaskListener] processing bpm_package item[{}] = {} | type={}",
@@ -228,6 +286,9 @@ public class CudDocumentLifecycleTaskListener implements TaskListener {
             }
         }
 
+        /* ================================================================
+         * MOVING FILE(S) ENDS HERE
+         * ================================================================ */
         LOG.info("[CUD Lifecycle TaskListener] transitionDocuments() summary: processed={}, moved={}, skipped/failed={}",
                 pkgList.size(), movedCount, skippedCount);
     }
