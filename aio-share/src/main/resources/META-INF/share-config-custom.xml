@@ -548,97 +548,127 @@
     
     ********************************************************************** -->
     <!-- Workflow Start Form Config -->
-    <config evaluator="string-compare" condition="cudwf:submitForReviewStart">
-         <forms>
-            <form>
-                <field-visibility>
-                    <show id="packageItems" force="true" />
-                    <show id="bpm:packageItems" force="true" />
-                    <show id="bpm:workflowDescription" force="true" />
-                    
-                    <!-- Display Comment, Due Date, Assignee, and Email Notifications -->
-                    <show id="bpm:dueDate" force="true" />
-                    <show id="bpm:comment" force="true" />
-                    <show id="bpm:sendEMailNotifications" force="true" />
+<config evaluator="string-compare" condition="cudwf:submitForReviewStart">
+    <forms>
+        <form>
+            <field-visibility>
+                <show id="bpm:workflowDescription" force="true" />
+                <show id="bpm:comment" force="true" />
+                <show id="bpm:dueDate" force="true" />
+                <show id="bpm:sendEMailNotifications" force="true" />
+                <show id="packageItems" force="true" />
+                <show id="bpm:packageItems" force="true" />
+                <show id="bpm:status" force="true" />
 
-                    <!-- Hide remaining unwanted defaults -->
-                    <hide id="bpm:workflowPriority" />
-                    <hide id="bpm:priority" />
-                    <hide id="bpm:workflowDueDate" />
-                    <hide id="bpm:assignee" />
-                </field-visibility>
+                <hide id="bpm:priority" />
+                <hide id="bpm:workflowPriority" />
+                <hide id="bpm:workflowDueDate" />
+                <hide id="bpm:assignee" />
+            </field-visibility>
 
-                <appearance>
-                    <set id="pkg-set" appearance="title" label="Selected Document(s)" />
-                    <set id="comment-set" appearance="title" label="Submission Details" />
-                    <set id="assignment-set" appearance="title" label="Assignment &amp; Schedule" />
-                   
-                    <!-- Review comment / using standard comment field -->
-                    <field id="pm:comment" set="comment-set" label="Comment for Reviewer">
-                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
-                    </field>
+            <appearance>
+                <set id="general-set" appearance="panel" label="General" />
+                <set id="schedule-set" appearance="panel" label="Schedule" />
+                <set id="notification-set" appearance="panel" label="Notification" />
+                <set id="pkg-set" appearance="panel" label="Selected Document(s)" />
 
-                    <!-- Due Date, Assignee, Send Email -->
-                    <field id="bpm:sendEMailNotifications" set="assignment-set" label="Send Email Notifications">
-                        <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
-                    </field>
-                    <field id="bpm:dueDate" set="assignment-set" label="Due Date">
-                        <control template="/org/alfresco/components/form/controls/date.ftl" />
-                    </field>
-                    
-                    <!-- Package items -->
-                    <field id="packageItems" set="pkg-set" label="Documents">
-                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
-                    </field>
-                    <field id="bpm:packageItems" set="pkg-set" label="Documents to Submit">
-                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
-                    </field>
-                </appearance>
-            </form>
-        </forms>
-    </config>
+                <field id="bpm:workflowDescription" set="general-set" label="Description" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                        <control-param name="rows">2</control-param>
+                    </control>
+                </field>
+
+                <field id="bpm:status"
+                    set="general-set"
+                    label="Status"
+                    read-only="true">
+                    <control template="/org/alfresco/components/form/controls/info.ftl" />
+                </field>
+
+                <field id="bpm:comment" set="general-set" label="Comment for Reviewer" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                        <control-param name="rows">4</control-param>
+                    </control>
+                </field>
+
+                <field id="bpm:dueDate" set="schedule-set" label="Due Date" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/date.ftl" />
+                </field>
+
+                <field id="bpm:sendEMailNotifications" set="notification-set" label="Send Email Notifications" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
+                </field>
+
+                <field id="packageItems" set="pkg-set">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                </field>
+                <field id="bpm:packageItems" set="pkg-set">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                </field>
+            </appearance>
+        </form>
+    </forms>
+</config>
 
      <!-- Fallback Workflow Start Form Config (same contents) -->
     <config evaluator="string-compare" condition="activiti$cud-document-lifecycle">
         <forms>
             <form>
                 <field-visibility>
-                    <show id="packageItems" force="true" />
-                    <show id="bpm:packageItems" force="true" />
-                    <show id="bpm:dueDate" force="true" />
-                    <show id="bpm:comment" force="true" />
-                    <show id="bpm:sendEMailNotifications" force="true" />
-                    <show id="bpm:workflowDescription" force="true" />
-                    
-                    <hide id="bpm:workflowPriority" />
-                    <hide id="bpm:priority" />
-                    <hide id="bpm:workflowDueDate" />
-                    <hide id="bpm:assignee" />
-                </field-visibility>
+                <show id="bpm:workflowDescription" force="true" />
+                <show id="bpm:comment" force="true" />
+                <show id="bpm:dueDate" force="true" />
+                <show id="bpm:sendEMailNotifications" force="true" />
+                <show id="packageItems" force="true" />
+                <show id="bpm:packageItems" force="true" />
+                <show id="bpm:status" force="true" />
 
-                <appearance>
-                    <set id="pkg-set" appearance="title" label="Selected Document(s)" />
-                    <set id="comment-set" appearance="title" label="Submission Details" />
-                    <set id="assignment-set" appearance="title" label="Assignment &amp; Schedule" />
-                   
-                    <field id="pm:comment" set="comment-set" label="Comment for Reviewer">
-                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
-                    </field>
+                <hide id="bpm:priority" />
+                <hide id="bpm:workflowPriority" />
+                <hide id="bpm:workflowDueDate" />
+                <hide id="bpm:assignee" />
+            </field-visibility>
 
-                    <field id="bpm:sendEMailNotifications" set="assignment-set" label="Send Email Notifications">
-                        <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
-                    </field>
-                    <field id="bpm:dueDate" set="assignment-set" label="Due Date">
-                        <control template="/org/alfresco/components/form/controls/date.ftl" />
-                    </field>
-                    
-                    <field id="packageItems" set="pkg-set" label="Documents">
-                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
-                    </field>
-                    <field id="bpm:packageItems" set="pkg-set" label="Documents to Submit">
-                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
-                    </field>
-                </appearance>
+            <appearance>
+                <set id="general-set" appearance="panel" label="General" />
+                <set id="schedule-set" appearance="panel" label="Schedule" />
+                <set id="notification-set" appearance="panel" label="Notification" />
+                <set id="pkg-set" appearance="panel" label="Selected Document(s)" />
+
+                <field id="bpm:workflowDescription" set="general-set" label="Description" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                        <control-param name="rows">2</control-param>
+                    </control>
+                </field>
+
+                <field id="bpm:status"
+                    set="general-set"
+                    label="Status"
+                    read-only="true">
+                    <control template="/org/alfresco/components/form/controls/info.ftl" />
+                </field>
+
+                <field id="bpm:comment" set="general-set" label="Comment for Reviewer" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                        <control-param name="rows">4</control-param>
+                    </control>
+                </field>
+
+                <field id="bpm:dueDate" set="schedule-set" label="Due Date" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/date.ftl" />
+                </field>
+
+                <field id="bpm:sendEMailNotifications" set="notification-set" label="Send Email Notifications" mandatory="true">
+                    <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
+                </field>
+
+                <field id="packageItems" set="pkg-set">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                </field>
+                <field id="bpm:packageItems" set="pkg-set">
+                    <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                </field>
+            </appearance>
             </form>
         </forms>
     </config>
@@ -648,37 +678,61 @@
         <forms>
             <form>
                 <field-visibility>
-                    <show id="transitions" force="true" />
-                    <show id="packageItems" force="true" />
-                    <show id="bpm:packageItems" force="true" />
-                    <show id="cudwf:approved" force="true" />
-
-                    <show id="bpm:dueDate" force="true" />
+                    <show id="message" force="true" />
+                    <show id="bpm:status" force="true" />
                     <show id="bpm:comment" force="true" />
                     <show id="bpm:sendEMailNotifications" force="true" />
+                    <show id="cudwf:approved" force="true" />
+                    <show id="transitions" force="true" />
+                    <show id="packageItems" force="true" />
                 </field-visibility>
 
                 <appearance>
-                    <set id="pkg-set" appearance="title" label="Selected Document(s)" />
-                    <set id="comment-set" appearance="title" label="Submission Details" />
-                    <set id="approved-set" appearance="title" label="Approval" />
-                    <set id="notification-set" appearance="title" label="Notification" />
-                    <set id="duedate-set" appearance="title" label="Approval" />
+                    <set id="" appearance="title" label="Review &amp; Approval Task" />
 
-                    <field id="bpm:comment" set="comment-set" label="Comment" mandatory="true">
-                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
-                    </field>
+                    <set id="review-info" 
+                        appearance="panel" 
+                        label="Task Details" 
+                        template="/org/alfresco/components/form/2-column-set.ftl" />
 
-                    <field id="bpm:sendEMailNotifications" set="notification-set" label="Send Email Notifications">
-                        <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
+                    <set id="decision" 
+                        appearance="panel" 
+                        label="Decision &amp; Actions" />
+
+                    <set id="package-container" 
+                        appearance="panel" 
+                        label="Document(s) for Review" />
+
+                    <!-- Left column -->
+                    <field id="message" set="review-info" label="Workflow Description" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
                     </field>
                     
-                    <field id="bpm:dueDate" set="duedate-set" label="Due Date" mandatory="true">
-                        <control template="/org/alfresco/components/form/controls/date.ftl" />
+                    <field id="bpm:sendEMailNotifications" set="review-info" label="Send Email Notifications">
+                        <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
                     </field>
 
-                    <field id="cudwf:approved" set="approved-set" label="Approve" mandatory="true">
+                    <!-- Right column -->
+                    <field id="bpm:comment" set="review-info" label="Reviewer Comment">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                            <control-param name="rows">4</control-param>
+                        </control>
+                    </field>
+
+                    <!-- Decision -->
+                    <field id="bpm:status" set="decision" label="Status" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="cudwf:approved" set="decision" label="Approve Submission" mandatory="true">
                         <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
+                    </field>
+
+                    <field id="transitions" set="decision" />
+
+                    <!-- Package -->
+                    <field id="packageItems" set="package-container">
+                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
                     </field>
                 </appearance>
             </form>
@@ -687,40 +741,64 @@
 
     <!-- Fallback duplicate for direct type match -->
     <config evaluator="string-compare" condition="cudwf:reviewTask">
-        <forms>
+         <forms>
             <form>
                 <field-visibility>
-                    <show id="transitions" force="true" />
-                    <show id="packageItems" force="true" />
-                    <show id="bpm:packageItems" force="true" />
-                    <show id="cudwf:approved" force="true" />
-
-                    <show id="bpm:dueDate" force="true" />
+                    <show id="message" force="true" />
+                    <show id="bpm:status" force="true" />
                     <show id="bpm:comment" force="true" />
                     <show id="bpm:sendEMailNotifications" force="true" />
+                    <show id="cudwf:approved" force="true" />
+                    <show id="transitions" force="true" />
+                    <show id="packageItems" force="true" />
                 </field-visibility>
 
-                 <appearance>
-                    <set id="pkg-set" appearance="title" label="Selected Document(s)" />
-                    <set id="comment-set" appearance="title" label="Submission Details" />
-                    <set id="approved-set" appearance="title" label="Approval" />
-                    <set id="notification-set" appearance="title" label="Notification" />
-                    <set id="duedate-set" appearance="title" label="Approval" />
+                <appearance>
+                    <set id="" appearance="title" label="Review &amp; Approval Task" />
 
-                    <field id="bpm:comment" set="comment-set" label="Comment" mandatory="true">
-                        <control template="/org/alfresco/components/form/controls/textarea.ftl" />
+                    <set id="review-info" 
+                        appearance="panel" 
+                        label="Task Details" 
+                        template="/org/alfresco/components/form/2-column-set.ftl" />
+
+                    <set id="decision" 
+                        appearance="panel" 
+                        label="Decision &amp; Actions" />
+
+                    <set id="package-container" 
+                        appearance="panel" 
+                        label="Document(s) for Review" />
+
+                    <!-- Left column -->
+                    <field id="message" set="review-info" label="Workflow Description" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
                     </field>
 
-                    <field id="bpm:sendEMailNotifications" set="notification-set" label="Send Email Notifications">
+                    <field id="bpm:sendEMailNotifications" set="review-info" label="Send Email Notifications">
                         <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
                     </field>
 
-                    <field id="bpm:dueDate" set="duedate-set" label="Due Date" mandatory="true">
-                        <control template="/org/alfresco/components/form/controls/date.ftl" />
+                    <!-- Right column -->
+                    <field id="bpm:comment" set="review-info" label="Reviewer Comment">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                            <control-param name="rows">4</control-param>
+                        </control>
                     </field>
 
-                    <field id="cudwf:approved" set="approved-set" label="Approve" mandatory="true">
+                    <!-- Decision -->
+                    <field id="bpm:status" set="decision" label="Status" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="cudwf:approved" set="decision" label="Approve Submission" mandatory="true">
                         <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
+                    </field>
+
+                    <field id="transitions" set="decision" />
+
+                    <!-- Package -->
+                    <field id="packageItems" set="package-container">
+                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
                     </field>
                 </appearance>
             </form>
