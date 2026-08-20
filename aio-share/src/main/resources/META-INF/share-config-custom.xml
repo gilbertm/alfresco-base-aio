@@ -554,6 +554,7 @@
                 <field-visibility>
                     <show id="packageItems" force="true" />
                     <show id="bpm:packageItems" force="true" />
+                    <show id="bpm:workflowDescription" force="true" />
                     
                     <!-- Display Comment, Due Date, Assignee, and Email Notifications -->
                     <show id="bpm:dueDate" force="true" />
@@ -561,7 +562,6 @@
                     <show id="bpm:sendEMailNotifications" force="true" />
 
                     <!-- Hide remaining unwanted defaults -->
-                    <hide id="bpm:workflowDescription" />
                     <hide id="bpm:workflowPriority" />
                     <hide id="bpm:priority" />
                     <hide id="bpm:workflowDueDate" />
@@ -608,8 +608,8 @@
                     <show id="bpm:dueDate" force="true" />
                     <show id="bpm:comment" force="true" />
                     <show id="bpm:sendEMailNotifications" force="true" />
+                    <show id="bpm:workflowDescription" force="true" />
                     
-                    <hide id="bpm:workflowDescription" />
                     <hide id="bpm:workflowPriority" />
                     <hide id="bpm:priority" />
                     <hide id="bpm:workflowDueDate" />

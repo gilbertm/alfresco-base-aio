@@ -33,6 +33,10 @@
           Place on the CUD space-template root.
           Any space created from that template keeps the aspect.
           Behaviour only runs for folders created directly under such a node.
+          This aspect is used and called by CudAutoDepartmentBehaviour
+          (ae.ac.cud.customs.CudAutoDepartmentBehaviour) which listens for
+          folder creation under nodes with this aspect and auto-provisions
+          the department structure (lifecycle folders, groups, permissions).
        -->
        <aspect name="cud:departmentRoot">
           <title>CUD Department Root</title>

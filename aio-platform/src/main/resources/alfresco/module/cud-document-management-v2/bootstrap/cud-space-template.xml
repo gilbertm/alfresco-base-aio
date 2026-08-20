@@ -34,8 +34,8 @@
       </view:acl>
 
       <view:properties>
-         <cm:name>CUD Document Management System V2</cm:name>
-         <cm:title>CUD Document Management System V2</cm:title>
+         <cm:name>Canadian University Dubai Document Management</cm:name>
+         <cm:title>Canadian University Dubai Document Management</cm:title>
          <cm:description>
             Space template. Create a folder from this template, then create
             department folders underneath – structure and groups are created automatically.
