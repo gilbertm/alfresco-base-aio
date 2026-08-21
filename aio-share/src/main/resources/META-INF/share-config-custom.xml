@@ -739,64 +739,203 @@
         </forms>
     </config>
 
-    <!-- Fallback duplicate for direct type match -->
-    <config evaluator="string-compare" condition="cudwf:reviewTask">
-         <forms>
+    <!-- **********************************************************************
+
+            This is for the revision workflow forms
+            (cud-document-revision.bpmn20.xml, process id: cud-document-revision)
+
+            Start form key : cudwf:submitForRevisionStart
+            Task form key  : cudwf:revisionTask (fully automatic — the task is
+                             auto-completed by CudRevisionTaskListener on create,
+                             so its form is only a read-only fallback)
+
+    ********************************************************************** -->
+
+    <!-- Revision Workflow Start Form Config -->
+    <config evaluator="string-compare" condition="cudwf:submitForRevisionStart">
+        <forms>
             <form>
                 <field-visibility>
-                    <show id="message" force="true" />
-                    <show id="bpm:status" force="true" />
-                    <show id="bpm:comment" force="true" />
+                    <show id="bpm:workflowDescription" force="true" />
+                    <show id="cudwf:revisionComment" force="true" />
                     <show id="bpm:sendEMailNotifications" force="true" />
-                    <show id="cudwf:approved" force="true" />
-                    <show id="transitions" force="true" />
                     <show id="packageItems" force="true" />
+                    <show id="bpm:packageItems" force="true" />
+                    <show id="bpm:status" force="true" />
+
+                    <hide id="bpm:priority" />
+                    <hide id="bpm:workflowPriority" />
+                    <hide id="bpm:workflowDueDate" />
+                    <hide id="bpm:assignee" />
                 </field-visibility>
 
                 <appearance>
-                    <set id="" appearance="title" label="Review &amp; Approval Task" />
+                    <set id="general-set" appearance="panel" label="General" />
+                    <set id="notification-set" appearance="panel" label="Notification" />
+                    <set id="pkg-set" appearance="panel" label="Published Document(s) to Revise" />
 
-                    <set id="review-info" 
-                        appearance="panel" 
-                        label="Task Details" 
-                        template="/org/alfresco/components/form/2-column-set.ftl" />
-
-                    <set id="decision" 
-                        appearance="panel" 
-                        label="Decision &amp; Actions" />
-
-                    <set id="package-container" 
-                        appearance="panel" 
-                        label="Document(s) for Review" />
-
-                    <!-- Left column -->
-                    <field id="message" set="review-info" label="Workflow Description" read-only="true">
-                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    <field id="bpm:workflowDescription" set="general-set" label="Description" mandatory="true">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                            <control-param name="rows">2</control-param>
+                        </control>
                     </field>
 
-                    <field id="bpm:sendEMailNotifications" set="review-info" label="Send Email Notifications">
-                        <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
-                    </field>
-
-                    <!-- Right column -->
-                    <field id="bpm:comment" set="review-info" label="Reviewer Comment">
+                    <field id="cudwf:revisionComment" set="general-set" label="Revision Instructions">
                         <control template="/org/alfresco/components/form/controls/textarea.ftl">
                             <control-param name="rows">4</control-param>
                         </control>
                     </field>
 
-                    <!-- Decision -->
-                    <field id="bpm:status" set="decision" label="Status" read-only="true">
+                    <field id="bpm:status" set="general-set" label="Status" read-only="true">
                         <control template="/org/alfresco/components/form/controls/info.ftl" />
                     </field>
 
-                    <field id="cudwf:approved" set="decision" label="Approve Submission" mandatory="true">
+                    <field id="bpm:sendEMailNotifications" set="notification-set" label="Send Email Notifications">
                         <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
                     </field>
 
-                    <field id="transitions" set="decision" />
+                    <field id="packageItems" set="pkg-set">
+                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                    </field>
+                    <field id="bpm:packageItems" set="pkg-set">
+                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
 
-                    <!-- Package -->
+    <!-- Fallback Revision Workflow Start Form Config (matched by process definition id) -->
+    <config evaluator="string-compare" condition="activiti$cud-document-revision">
+        <forms>
+            <form>
+                <field-visibility>
+                    <show id="bpm:workflowDescription" force="true" />
+                    <show id="cudwf:revisionComment" force="true" />
+                    <show id="bpm:sendEMailNotifications" force="true" />
+                    <show id="packageItems" force="true" />
+                    <show id="bpm:packageItems" force="true" />
+                    <show id="bpm:status" force="true" />
+
+                    <hide id="bpm:priority" />
+                    <hide id="bpm:workflowPriority" />
+                    <hide id="bpm:workflowDueDate" />
+                    <hide id="bpm:assignee" />
+                </field-visibility>
+
+                <appearance>
+                    <set id="general-set" appearance="panel" label="General" />
+                    <set id="notification-set" appearance="panel" label="Notification" />
+                    <set id="pkg-set" appearance="panel" label="Published Document(s) to Revise" />
+
+                    <field id="bpm:workflowDescription" set="general-set" label="Description" mandatory="true">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                            <control-param name="rows">2</control-param>
+                        </control>
+                    </field>
+
+                    <field id="cudwf:revisionComment" set="general-set" label="Revision Instructions">
+                        <control template="/org/alfresco/components/form/controls/textarea.ftl">
+                            <control-param name="rows">4</control-param>
+                        </control>
+                    </field>
+
+                    <field id="bpm:status" set="general-set" label="Status" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="bpm:sendEMailNotifications" set="notification-set" label="Send Email Notifications">
+                        <control template="/org/alfresco/components/form/controls/checkbox.ftl" />
+                    </field>
+
+                    <field id="packageItems" set="pkg-set">
+                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                    </field>
+                    <field id="bpm:packageItems" set="pkg-set">
+                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
+
+    <!-- Revision Task Form (read-only fallback; task is auto-completed by
+         CudRevisionTaskListener on create, so users normally never see it) -->
+    <config evaluator="task-type" condition="cudwf:revisionTask">
+        <forms>
+            <form>
+                <field-visibility>
+                    <show id="message" force="true" />
+                    <show id="bpm:status" force="true" />
+                    <show id="cudwf:revisionComment" force="true" />
+                    <show id="packageItems" force="true" />
+                </field-visibility>
+
+                <appearance>
+                    <set id="" appearance="title" label="Send Back for Revision" />
+
+                    <set id="revision-info"
+                        appearance="panel"
+                        label="Task Details" />
+
+                    <set id="package-container"
+                        appearance="panel"
+                        label="Document(s) Sent Back for Revision" />
+
+                    <field id="message" set="revision-info" label="Workflow Description" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="bpm:status" set="revision-info" label="Status" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="cudwf:revisionComment" set="revision-info" label="Revision Instructions" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="packageItems" set="package-container">
+                        <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
+                    </field>
+                </appearance>
+            </form>
+        </forms>
+    </config>
+
+    <!-- Fallback revision task form for direct type match -->
+    <config evaluator="string-compare" condition="cudwf:revisionTask">
+        <forms>
+            <form>
+                <field-visibility>
+                    <show id="message" force="true" />
+                    <show id="bpm:status" force="true" />
+                    <show id="cudwf:revisionComment" force="true" />
+                    <show id="packageItems" force="true" />
+                </field-visibility>
+
+                <appearance>
+                    <set id="" appearance="title" label="Send Back for Revision" />
+
+                    <set id="revision-info"
+                        appearance="panel"
+                        label="Task Details" />
+
+                    <set id="package-container"
+                        appearance="panel"
+                        label="Document(s) Sent Back for Revision" />
+
+                    <field id="message" set="revision-info" label="Workflow Description" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="bpm:status" set="revision-info" label="Status" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
+                    <field id="cudwf:revisionComment" set="revision-info" label="Revision Instructions" read-only="true">
+                        <control template="/org/alfresco/components/form/controls/info.ftl" />
+                    </field>
+
                     <field id="packageItems" set="package-container">
                         <control template="/org/alfresco/components/form/controls/workflow/packageitems.ftl" />
                     </field>

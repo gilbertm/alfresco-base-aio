@@ -24,10 +24,13 @@
       <property name="lockService" ref="LockService" />
    </bean>
 
-   <bean id="cudRevisionDelegate"
-         class="ae.ac.cud.workflow.lifecycle.CudRevisionDelegate">
-      <property name="nodeService" ref="NodeService"/>
-      <property name="fileFolderService" ref="FileFolderService"/>
+   <!-- Revision task listener (TaskListener approach — used by cud-document-revision.bpmn20.xml) -->
+   <bean id="cudRevisionTaskListener" 
+      class="ae.ac.cud.workflow.lifecycle.CudRevisionTaskListener">
+      <property name="nodeService" ref="NodeService" />
+      <property name="fileFolderService" ref="FileFolderService" />
+      <property name="lockService" ref="LockService" />
+      <property name="contentService" ref="ContentService" />
    </bean>
 
    <!-- OnCreateNode behaviour -->

@@ -66,6 +66,17 @@
          </properties>
       </type>
 
+      <!-- Revision task: confirms the document has been sent back for revision
+           (handled by CudRevisionTaskListener on create/complete events) -->
+      <type name="cudwf:revisionTask">
+         <parent>bpm:workflowTask</parent>
+         <overrides>
+            <property name="bpm:status">
+                  <default>Completed</default>
+            </property>
+         </overrides>
+      </type>
+
    </types>
 
 </model>

@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.activiti.engine.delegate.DelegateExecution;
-import org.activiti.engine.delegate.JavaDelegate;
+import org.activiti.engine.delegate.DelegateTask;
+import org.activiti.engine.delegate.TaskListener;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.engine.impl.context.Context;
 import org.alfresco.model.ContentModel;
@@ -33,31 +33,36 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 /**
- * JavaDelegate that handles the fully-automatic "Submit for Revision" workflow.
+ * TaskListener that handles the "Submit for Revision" workflow.
  *
- * IMPORTANT: This must run as a serviceTask (not a userTask with a TaskListener
- * that auto-completes). Completing a userTask inside its own "create" event
- * causes Activiti to flush an identity-link insert for a task that no longer
- * exists in the same command, which violates the ACT_FK_TSKASS_TASK foreign key.
- * A serviceTask executes synchronously and never creates a task row, so the
- * workflow proceeds directly from start -> revision -> end.
- *
- * BPMN usage:
- *   <serviceTask id="revisionTask" name="Send Back for Revision"
- *                activiti:class="ae.ac.cud.workflow.lifecycle.CudRevisionDelegate" />
+ * This listener uses the same technique as CudDocumentLifecycleTaskListener:
+ *   - Implements TaskListener (not JavaDelegate)
+ *   - Resolves services via ServiceRegistry fallback
+ *   - Extracts package documents via WorkflowModel.ASSOC_PACKAGE_CONTAINS
  *
  * For every document in the workflow package that currently sits in a
- * {Dept}_Published folder (locked), this delegate:
+ * {Dept}_Published folder (locked), this listener:
+ *
  *   1. Creates a COPY in {Dept}_Archive to preserve the published version
  *   2. MOVES the original from {Dept}_Published back to {Dept}_Draft
  *   3. Unlocks the document so the author can revise it
  *   4. Adds a comment: "Sent back for revision – new version requested"
  *   5. Stamps lifecycle metadata as DRAFT with history entry
+ *
+ * BPMN usage (same technique as cud-document-lifecycle.bpmn20.xml, but fully
+ * automatic — only the "create" event is used; no manual completion):
+ *   <userTask id="revisionTask" name="Send Back for Revision"
+ *             activiti:formKey="cudwf:revisionTask">
+ *       <extensionElements>
+ *           <activiti:taskListener event="create"
+ *                                  activiti:class="ae.ac.cud.workflow.lifecycle.CudRevisionTaskListener" />
+ *       </extensionElements>
+ *   </userTask>
  */
-public class CudRevisionDelegate implements JavaDelegate {
+public class CudRevisionTaskListener implements TaskListener {
 
     private static final Logger LOG =
-            LoggerFactory.getLogger(CudRevisionDelegate.class);
+            LoggerFactory.getLogger(CudRevisionTaskListener.class);
 
     private static final String CUD_URI = "http://www.cud.ac.ae/model/content/1.0";
     private static final QName ASPECT_LIFECYCLE =
@@ -79,7 +84,8 @@ public class CudRevisionDelegate implements JavaDelegate {
             + "The previously published copy has been archived.";
 
     /** Forum model namespace URI (fm:). */
-    private static final String FORUMS_NS = "http://www.alfresco.org/model/forum/1.0";
+    private static final String FORUMS_MODEL_URI =
+            "http://www.alfresco.org/model/forum/1.0";
 
     private static final String MIMETYPE_TEXT_PLAIN = "text/plain";
 
@@ -89,54 +95,81 @@ public class CudRevisionDelegate implements JavaDelegate {
     private ContentService contentService;
 
     @Override
-    public void execute(DelegateExecution execution) {
+    public void notify(DelegateTask delegateTask) {
 
         // Resolve services via ServiceRegistry fallback (same technique as lifecycle listener)
-        resolveServices();
+        if (this.nodeService == null || this.fileFolderService == null
+                || this.lockService == null || this.contentService == null) {
+            ProcessEngineConfigurationImpl config = Context.getProcessEngineConfiguration();
+            if (config != null && config.getBeans() != null) {
+                Object serviceRegistryObj = config.getBeans().get(ActivitiConstants.SERVICE_REGISTRY_BEAN_KEY);
+                if (serviceRegistryObj == null) {
+                    serviceRegistryObj = config.getBeans().get("ServiceRegistry");
+                }
 
-        LOG.info("[CUD Revision Delegate] >>> execute() invoked | processInstanceId='{}' | executionId='{}'",
-                execution.getProcessInstanceId(), execution.getId());
+                ServiceRegistry registry = null;
+                if (serviceRegistryObj instanceof ServiceRegistry) {
+                    registry = (ServiceRegistry) serviceRegistryObj;
+                } else if (serviceRegistryObj instanceof ApplicationContext) {
+                    registry = (ServiceRegistry) ((ApplicationContext) serviceRegistryObj)
+                            .getBean(ServiceRegistry.SERVICE_REGISTRY);
+                }
 
-        if (nodeService == null || fileFolderService == null) {
-            LOG.error("[CUD Revision Delegate] required services unavailable — aborting revision logic");
-            return;
+                if (registry != null) {
+                    if (this.nodeService == null) this.nodeService = registry.getNodeService();
+                    if (this.fileFolderService == null) this.fileFolderService = registry.getFileFolderService();
+                    if (this.lockService == null) this.lockService = registry.getLockService();
+                    if (this.contentService == null) this.contentService = registry.getContentService();
+                }
+            }
         }
 
-        sendBackForRevision(execution);
+        String event = delegateTask.getEventName();
 
-        LOG.info("[CUD Revision Delegate] <<< execute() finished for processInstanceId='{}'",
-                execution.getProcessInstanceId());
+        LOG.info("[CUD Revision TaskListener] >>> notify() invoked | taskId='{}' | taskName='{}' | event='{}' | processInstanceId='{}' | executionId='{}'",
+                delegateTask.getId(),
+                delegateTask.getName(),
+                event,
+                delegateTask.getProcessInstanceId(),
+                delegateTask.getExecutionId());
+
+        if ("create".equals(event)) {
+            LOG.info("[CUD Revision TaskListener] event='create' — performing revision logic");
+
+            // Perform the revision logic on all documents in the package
+            sendBackForRevision(delegateTask);
+
+            // Auto-complete the task so the workflow proceeds straight to the end
+            // event. The revision is fully automatic — there is no manual task for
+            // anyone to complete.
+            autoCompleteTask(delegateTask);
+        } else {
+            LOG.info("[CUD Revision TaskListener] event='{}' — not handled by this listener", event);
+        }
+
+        LOG.info("[CUD Revision TaskListener] <<< notify() finished for taskId='{}' event='{}'",
+                delegateTask.getId(), event);
     }
 
-    private void resolveServices() {
-        if (this.nodeService != null && this.fileFolderService != null
-                && this.lockService != null && this.contentService != null) {
-            return;
-        }
-
-        ProcessEngineConfigurationImpl config = Context.getProcessEngineConfiguration();
-        if (config == null || config.getBeans() == null) {
-            return;
-        }
-
-        Object serviceRegistryObj = config.getBeans().get(ActivitiConstants.SERVICE_REGISTRY_BEAN_KEY);
-        if (serviceRegistryObj == null) {
-            serviceRegistryObj = config.getBeans().get("ServiceRegistry");
-        }
-
-        ServiceRegistry registry = null;
-        if (serviceRegistryObj instanceof ServiceRegistry) {
-            registry = (ServiceRegistry) serviceRegistryObj;
-        } else if (serviceRegistryObj instanceof ApplicationContext) {
-            registry = (ServiceRegistry) ((ApplicationContext) serviceRegistryObj)
-                    .getBean(ServiceRegistry.SERVICE_REGISTRY);
-        }
-
-        if (registry != null) {
-            if (this.nodeService == null) this.nodeService = registry.getNodeService();
-            if (this.fileFolderService == null) this.fileFolderService = registry.getFileFolderService();
-            if (this.lockService == null) this.lockService = registry.getLockService();
-            if (this.contentService == null) this.contentService = registry.getContentService();
+    /**
+     * Completes the current task programmatically so the workflow moves on to
+     * the end event immediately. This makes the revision workflow fully
+     * automatic (no manual task completion required).
+     */
+    private void autoCompleteTask(DelegateTask delegateTask) {
+        try {
+            ProcessEngineConfigurationImpl config = Context.getProcessEngineConfiguration();
+            if (config != null && config.getTaskService() != null) {
+                config.getTaskService().complete(delegateTask.getId());
+                LOG.info("[CUD Revision TaskListener] auto-completed task '{}' — workflow proceeding to end",
+                        delegateTask.getId());
+            } else {
+                LOG.warn("[CUD Revision TaskListener] could not auto-complete task '{}' — TaskService unavailable",
+                        delegateTask.getId());
+            }
+        } catch (Exception e) {
+            LOG.warn("[CUD Revision TaskListener] failed to auto-complete task '{}': {}",
+                    delegateTask.getId(), e.getMessage());
         }
     }
 
@@ -144,12 +177,15 @@ public class CudRevisionDelegate implements JavaDelegate {
      * Iterates over all documents in the workflow package and sends each
      * back for revision (archive copy + move to draft + unlock + comment).
      */
-    private void sendBackForRevision(DelegateExecution execution) {
+    private void sendBackForRevision(DelegateTask delegateTask) {
         // 1. Resolve package variable (same technique as lifecycle listener)
-        Object pkg = execution.getVariable("bpm_package");
+        Object pkg = delegateTask.getVariable("bpm_package");
+        if (pkg == null && delegateTask.getExecution() != null) {
+            pkg = delegateTask.getExecution().getVariable("bpm_package");
+        }
 
         if (pkg == null) {
-            LOG.warn("[CUD Revision Delegate] bpm_package is NULL");
+            LOG.warn("[CUD Revision TaskListener] bpm_package is NULL");
             return;
         }
 
@@ -162,7 +198,7 @@ public class CudRevisionDelegate implements JavaDelegate {
         }
 
         if (packageNodeRef == null) {
-            LOG.warn("[CUD Revision Delegate] Could not resolve NodeRef for bpm_package");
+            LOG.warn("[CUD Revision TaskListener] Could not resolve NodeRef for bpm_package");
             return;
         }
 
@@ -174,7 +210,7 @@ public class CudRevisionDelegate implements JavaDelegate {
         );
 
         if (childAssocs == null || childAssocs.isEmpty()) {
-            LOG.warn("[CUD Revision Delegate] Workflow package contains 0 items");
+            LOG.warn("[CUD Revision TaskListener] Workflow package contains 0 items");
             return;
         }
 
@@ -182,9 +218,9 @@ public class CudRevisionDelegate implements JavaDelegate {
         for (ChildAssociationRef assoc : childAssocs) {
             NodeRef docRef = assoc.getChildRef();
             try {
-                processDocumentForRevision(docRef, execution);
+                processDocumentForRevision(docRef, delegateTask);
             } catch (Exception e) {
-                LOG.error("[CUD Revision Delegate] Failed to process document for revision: {}", docRef, e);
+                LOG.error("[CUD Revision TaskListener] Failed to process document for revision: {}", docRef, e);
             }
         }
     }
@@ -193,32 +229,32 @@ public class CudRevisionDelegate implements JavaDelegate {
      * Core revision logic for a single document:
      * archive a copy, move the original back to Draft, unlock, comment, and stamp metadata.
      */
-    private void processDocumentForRevision(NodeRef doc, DelegateExecution execution) {
+    private void processDocumentForRevision(NodeRef doc, DelegateTask delegateTask) {
 
-        LOG.info("[CUD Revision Delegate] processDocumentForRevision() START | nodeRef={}", doc);
+        LOG.info("[CUD Revision TaskListener] processDocumentForRevision() START | nodeRef={}", doc);
 
         FileInfo info = fileFolderService.getFileInfo(doc);
         if (info == null) {
-            LOG.warn("[CUD Revision Delegate] fileFolderService.getFileInfo({}) returned NULL – skipping", doc);
+            LOG.warn("[CUD Revision TaskListener] fileFolderService.getFileInfo({}) returned NULL – skipping", doc);
             return;
         }
         if (!nodeService.exists(doc)) {
-            LOG.warn("[CUD Revision Delegate] nodeService.exists({}) returned FALSE – skipping", doc);
+            LOG.warn("[CUD Revision TaskListener] nodeService.exists({}) returned FALSE – skipping", doc);
             return;
         }
 
-        LOG.info("[CUD Revision Delegate] document name='{}' | nodeRef={}", info.getName(), doc);
+        LOG.info("[CUD Revision TaskListener] document name='{}' | nodeRef={}", info.getName(), doc);
 
         NodeRef currentFolderRef = nodeService.getPrimaryParent(doc).getParentRef();
         String currentFolderName = (String)
                 nodeService.getProperty(currentFolderRef, ContentModel.PROP_NAME);
 
-        LOG.info("[CUD Revision Delegate] currentFolder='{}' (NodeRef={})",
+        LOG.info("[CUD Revision TaskListener] currentFolder='{}' (NodeRef={})",
                 currentFolderName, currentFolderRef);
 
         // expect the original to sit in "{Dept}_Published"
         if (!currentFolderName.endsWith(PUBLISHED_SUFFIX)) {
-            LOG.warn("[CUD Revision Delegate] document '{}' is NOT in a _Published folder (parent='{}') – skipping",
+            LOG.warn("[CUD Revision TaskListener] document '{}' is NOT in a _Published folder (parent='{}') – skipping",
                     info.getName(), currentFolderName);
             return;
         }
@@ -230,21 +266,21 @@ public class CudRevisionDelegate implements JavaDelegate {
 
         String origName = info.getName();
 
-        LOG.info("[CUD Revision Delegate] deptBase='{}' | deptRoot='{}' (NodeRef={})",
+        LOG.info("[CUD Revision TaskListener] deptBase='{}' | deptRoot='{}' (NodeRef={})",
                 deptBase, deptRootName, deptRoot);
 
         // ── Step 1: Copy to Archive ──────────────────────────────────────
         String archiveFolderName = deptBase + ARCHIVE_SUFFIX;
         NodeRef archiveFolder = fileFolderService.searchSimple(deptRoot, archiveFolderName);
         if (archiveFolder == null) {
-            LOG.error("[CUD Revision Delegate] archive folder '{}' NOT FOUND under department root '{}' – skipping archive copy",
+            LOG.error("[CUD Revision TaskListener] archive folder '{}' NOT FOUND under department root '{}' – skipping archive copy",
                     archiveFolderName, deptRootName);
         } else {
             String archiveName = buildCopyName(origName, archiveFolder);
             try {
                 FileInfo archiveCopy = fileFolderService.copy(doc, archiveFolder, archiveName);
                 NodeRef archiveCopyRef = archiveCopy.getNodeRef();
-                LOG.info("[CUD Revision Delegate] archived copy '{}' -> '{}/{}'",
+                LOG.info("[CUD Revision TaskListener] archived copy '{}' -> '{}/{}'",
                         origName, archiveFolderName, archiveName);
 
                 // stamp the archive copy with ARCHIVED status
@@ -258,9 +294,9 @@ public class CudRevisionDelegate implements JavaDelegate {
 
                 appendHistory(archiveCopyRef,
                         "ARCHIVED (sent back for revision – preserved copy of '" + origName + "')",
-                        archiveFolderName, execution);
+                        archiveFolderName, delegateTask);
             } catch (FileNotFoundException e) {
-                LOG.error("[CUD Revision Delegate] failed to copy '{}' to archive folder '{}': {}",
+                LOG.error("[CUD Revision TaskListener] failed to copy '{}' to archive folder '{}': {}",
                         origName, archiveFolderName, e.getMessage(), e);
             }
         }
@@ -269,31 +305,31 @@ public class CudRevisionDelegate implements JavaDelegate {
         String draftFolderName = deptBase + DRAFT_SUFFIX;
         NodeRef draftFolder = fileFolderService.searchSimple(deptRoot, draftFolderName);
         if (draftFolder == null) {
-            LOG.error("[CUD Revision Delegate] draft folder '{}' NOT FOUND under department root '{}' – cannot move document",
+            LOG.error("[CUD Revision TaskListener] draft folder '{}' NOT FOUND under department root '{}' – cannot move document",
                     draftFolderName, deptRootName);
             return;
         }
 
         try {
             fileFolderService.move(doc, draftFolder, null);
-            LOG.info("[CUD Revision Delegate] moved '{}' from '{}' to '{}/{}'",
+            LOG.info("[CUD Revision TaskListener] moved '{}' from '{}' to '{}/{}'",
                     origName, currentFolderName, draftFolderName, origName);
         } catch (FileNotFoundException e) {
-            LOG.error("[CUD Revision Delegate] failed to move '{}' to draft folder '{}': {}",
+            LOG.error("[CUD Revision TaskListener] failed to move '{}' to draft folder '{}': {}",
                     origName, draftFolderName, e.getMessage(), e);
             return;
         }
 
         // ── Step 3: Unlock the document ──────────────────────────────────
         try {
-            if (lockService != null && lockService.isLocked(doc)) {
+            if (lockService.isLocked(doc)) {
                 lockService.unlock(doc);
-                LOG.info("[CUD Revision Delegate] unlocked '{}' for revision", origName);
+                LOG.info("[CUD Revision TaskListener] unlocked '{}' for revision", origName);
             } else {
-                LOG.info("[CUD Revision Delegate] document '{}' is not locked – no unlock needed", origName);
+                LOG.info("[CUD Revision TaskListener] document '{}' is not locked – no unlock needed", origName);
             }
         } catch (Exception e) {
-            LOG.warn("[CUD Revision Delegate] could not unlock '{}': {}", origName, e.getMessage());
+            LOG.warn("[CUD Revision TaskListener] could not unlock '{}': {}", origName, e.getMessage());
         }
 
         // ── Step 4: Stamp lifecycle metadata as DRAFT ────────────────────
@@ -304,16 +340,16 @@ public class CudRevisionDelegate implements JavaDelegate {
         props.put(PROP_STATUS, "DRAFT");
         props.put(PROP_CHANGED_AT, new Date());
         nodeService.addProperties(doc, props);
-        LOG.info("[CUD Revision Delegate] updated lifecycleStatus='DRAFT' on '{}'", origName);
+        LOG.info("[CUD Revision TaskListener] updated lifecycleStatus='DRAFT' on '{}'", origName);
 
         appendHistory(doc,
                 "DRAFT (sent back for revision from '" + currentFolderName + "')",
-                draftFolderName, execution);
+                draftFolderName, delegateTask);
 
         // ── Step 5: Add revision comment ─────────────────────────────────
-        addRevisionComment(doc, execution);
+        addRevisionComment(doc, delegateTask);
 
-        LOG.info("[CUD Revision Delegate] processDocumentForRevision() END | document '{}' successfully sent back for revision "
+        LOG.info("[CUD Revision TaskListener] processDocumentForRevision() END | document '{}' successfully sent back for revision "
                 + "(archived in '{}', moved to '{}', unlocked, commented)",
                 origName, archiveFolderName, draftFolderName);
     }
@@ -340,64 +376,45 @@ public class CudRevisionDelegate implements JavaDelegate {
     /**
      * Adds a comment to the document indicating it was sent back for revision.
      *
-     * Alfresco comments live in the forum model:
-     *   document --fm:discussion--> fm:forum --fm:topic--> fm:topic --fm:post--> fm:post
-     *
-     * IMPORTANT: the child associations must be the model-defined ones
-     * (fm:topic under fm:forum, fm:post under fm:topic). Creating an fm:post
-     * directly under an fm:forum with sys:children violates the content model,
-     * because sys:children requires the source node to be a sys:container
-     * (fm:forum is not), which triggers:
-     *   "The association source type is incorrect ...
-     *    Required Source Type: sys:container, Actual Source Type: fm:forum".
+     * Alfresco comments are stored as fm:post nodes under an fm:discussion
+     * container attached to the node via the fm:discussable aspect.
      */
-    private void addRevisionComment(NodeRef doc, DelegateExecution execution) {
+    private void addRevisionComment(NodeRef doc, DelegateTask delegateTask) {
         try {
-            // 1. ensure the document is discussable
+            // 1. ensure the node is discussable
             if (!nodeService.hasAspect(doc, ForumModel.ASPECT_DISCUSSABLE)) {
                 nodeService.addAspect(doc, ForumModel.ASPECT_DISCUSSABLE, null);
             }
 
-            // 2. find (or create) the discussion container (fm:forum)
-            NodeRef forumRef = null;
+            // 2. find (or create) the discussion container
+            NodeRef discussionRef = null;
             List<ChildAssociationRef> discussions = nodeService.getChildAssocs(
                     doc, ForumModel.ASSOC_DISCUSSION, RegexQNamePattern.MATCH_ALL);
             if (discussions != null && !discussions.isEmpty()) {
-                forumRef = discussions.get(0).getChildRef();
+                discussionRef = discussions.get(0).getChildRef();
             } else {
-                forumRef = nodeService.createNode(
+                String discName = "discussion";
+                discussionRef = nodeService.createNode(
                         doc,
                         ForumModel.ASSOC_DISCUSSION,
-                        QName.createQName(FORUMS_NS, "discussion"),
+                        QName.createQName(FORUMS_MODEL_URI, discName),
                         ForumModel.TYPE_FORUM).getChildRef();
             }
 
-            // 3. create a topic under the forum via the model-defined fm:topic
-            //    child association (one topic per comment, like the Share UI does)
-            QName topicAssocType = QName.createQName(FORUMS_NS, "topic");
-            String topicName = "topic_" + System.currentTimeMillis();
-            NodeRef topicRef = nodeService.createNode(
-                    forumRef,
-                    topicAssocType,
-                    QName.createQName(FORUMS_NS, topicName),
-                    ForumModel.TYPE_TOPIC).getChildRef();
-            nodeService.setProperty(topicRef, ContentModel.PROP_NAME, topicName);
-            nodeService.setProperty(topicRef, ContentModel.PROP_TITLE, "Sent back for revision");
-
-            // 4. create the post under the topic via the fm:post child association
-            QName postAssocType = QName.createQName(FORUMS_NS, "post");
+            // 3. create the comment post node
             String postName = "post_" + System.currentTimeMillis();
             NodeRef postRef = nodeService.createNode(
-                    topicRef,
-                    postAssocType,
-                    QName.createQName(FORUMS_NS, postName),
+                    discussionRef,
+                    ContentModel.ASSOC_CHILDREN,
+                    QName.createQName(FORUMS_MODEL_URI, postName),
                     ForumModel.TYPE_POST).getChildRef();
+
             nodeService.setProperty(postRef, ContentModel.PROP_NAME, postName);
             nodeService.setProperty(postRef, ContentModel.PROP_TITLE, "Sent back for revision");
 
-            // 5. write the comment content
+            // 4. write the comment content
             String commentContent = REVISION_COMMENT
-                    + " Workflow instance: " + execution.getProcessInstanceId()
+                    + " Workflow instance: " + delegateTask.getProcessInstanceId()
                     + " | Date: " + new Date();
             if (contentService != null) {
                 ContentWriter writer = contentService.getWriter(
@@ -406,16 +423,16 @@ public class CudRevisionDelegate implements JavaDelegate {
                 writer.putContent(commentContent);
             }
 
-            LOG.info("[CUD Revision Delegate] added revision comment to document {}", doc);
+            LOG.info("[CUD Revision TaskListener] added revision comment to document {}", doc);
         } catch (Exception e) {
-            LOG.warn("[CUD Revision Delegate] failed to add comment to document {}: {}",
+            LOG.warn("[CUD Revision TaskListener] failed to add comment to document {}: {}",
                     doc, e.getMessage());
         }
     }
 
     @SuppressWarnings("unchecked")
     private void appendHistory(NodeRef doc, String state, String folderName,
-                               DelegateExecution execution) {
+                               DelegateTask delegateTask) {
         List<Serializable> history;
         Object existing = nodeService.getProperty(doc, PROP_HISTORY);
         if (existing instanceof List) {
@@ -424,10 +441,10 @@ public class CudRevisionDelegate implements JavaDelegate {
             history = new ArrayList<Serializable>();
         }
         String entry = new Date() + " | " + state + " | placed in " + folderName
-                + " | by workflow instance " + execution.getProcessInstanceId();
+                + " | by workflow instance " + delegateTask.getProcessInstanceId();
         history.add(entry);
         nodeService.setProperty(doc, PROP_HISTORY, (Serializable) history);
-        LOG.debug("[CUD Revision Delegate] appended history entry: '{}'", entry);
+        LOG.debug("[CUD Revision TaskListener] appended history entry: '{}'", entry);
     }
 
     // ------------------------------------------------------------------

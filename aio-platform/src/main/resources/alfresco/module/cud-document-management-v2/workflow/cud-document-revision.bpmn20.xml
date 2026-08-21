@@ -3,6 +3,7 @@
 <definitions
         xmlns:activiti="http://activiti.org/bpmn"
         xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         typeLanguage="http://www.w3.org/2001/XMLSchema"
         expressionLanguage="http://www.w3.org/1999/XPath"
         targetNamespace="http://www.cud.ac.ae/workflow">
@@ -11,23 +12,33 @@
        CUD Document Revision ("Submit for Revision" action):
 
        Started from the Published folder by the owner/manager on a
-       published document. Copies the document into {Dept}_Draft
-       (name + "_rev") so it can be revised and re-submitted through the
-       CUD Document Lifecycle workflow. The published original stays in
-       {Dept}_Published, locked, status PUBLISHED.
+       published (locked) document. The JavaDelegate:
+         1. Creates a copy in {Dept}_Archive (preserves published version)
+         2. Moves the original from {Dept}_Published to {Dept}_Draft
+         3. Unlocks the document for editing
+         4. Adds a comment: "Sent back for revision – new version requested"
+         5. Stamps lifecycle metadata as DRAFT with history entry
 
-       This is the simple v1 path: single service task, immediate end.
-       (A later iteration can add a confirm task / revision assignment.)
-   -->
+       The document can then be revised and re-submitted through the
+       CUD Document Lifecycle workflow.
+
+       The revision logic is handled by CudRevisionDelegate as a serviceTask
+       (fully automatic). Using a serviceTask instead of a userTask avoids
+       the Activiti foreign-key error (ACT_FK_TSKASS_TASK) that occurs when
+       a userTask is completed inside its own "create" TaskListener.
+    -->
    <process id="cud-document-revision" name="CUD Document Revision">
 
+      <!-- Start: owner/manager submits a published document for revision -->
       <startEvent id="start" activiti:formKey="cudwf:submitForRevisionStart"/>
-      <sequenceFlow id="flow-start-to-copy" sourceRef="start" targetRef="copyToDraft"/>
+      <sequenceFlow id="flow-start-to-task" sourceRef="start" targetRef="revisionTask"/>
 
-      <!-- PUBLISHED -> DRAFT : content copied into {Dept}_Draft -->
-      <serviceTask id="copyToDraft" name="Copy to Draft folder"
-                   activiti:delegateExpression="${cudRevisionDelegate}"/>
-      <sequenceFlow id="flow-copy-to-end" sourceRef="copyToDraft" targetRef="end"/>
+      <!-- Revision step: fully automatic. The JavaDelegate performs the
+           revision logic (archive + move + unlock + comment) and the
+           workflow proceeds straight to the end event. No manual step. -->
+      <serviceTask id="revisionTask" name="Send Back for Revision"
+                   activiti:class="ae.ac.cud.workflow.lifecycle.CudRevisionDelegate" />
+      <sequenceFlow id="flow-task-to-end" sourceRef="revisionTask" targetRef="end"/>
 
       <endEvent id="end"/>
 
